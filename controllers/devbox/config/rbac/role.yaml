@@ -19,6 +19,38 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+    - events
+  verbs:
+    - '*'
+- apiGroups:
+    - ""
+  resources:
+    - pods
+  verbs:
+    - '*'
+- apiGroups:
+  - ""
+  resources:
+  - pods/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+    - '*'
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+    - '*'
+- apiGroups:
   - devbox.sealos.io
   resources:
   - devboxes
@@ -66,32 +98,6 @@ rules:
   - devbox.sealos.io
   resources:
   - devboxreleases/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - devbox.sealos.io
-  resources:
-  - operationrequests
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - devbox.sealos.io
-  resources:
-  - operationrequests/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - devbox.sealos.io
-  resources:
-  - operationrequests/status
   verbs:
   - get
   - patch

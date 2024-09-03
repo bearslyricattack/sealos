@@ -12,7 +12,7 @@ import { ApplicationType, TemplateSourceType } from '@/types/app';
 import { serviceSideProps } from '@/utils/i18n';
 import { generateYamlList, parseTemplateString } from '@/utils/json-yaml';
 import { compareFirstLanguages, deepSearch, useCopyData } from '@/utils/tools';
-import { Box, Flex, Icon, Text } from '@chakra-ui/react';
+import { Box, Flex, Icon, Text, Grid, GridItem } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import debounce from 'lodash/debounce';
 import { useTranslation } from 'next-i18next';
@@ -23,6 +23,10 @@ import { useForm } from 'react-hook-form';
 import Form from './components/Form';
 import ReadMe from './components/ReadMe';
 import { getTemplateInputDefaultValues, getTemplateValues } from '@/utils/template';
+import QuotaBox from './components/QuotaBox';
+import PriceBox from './components/PriceBox';
+import { useUserStore } from '@/store/user';
+import { getResourceUsage } from '@/utils/usage';
 
 const ErrorModal = dynamic(() => import('./components/ErrorModal'));
 const Header = dynamic(() => import('./components/Header'), { ssr: false });
@@ -41,11 +45,20 @@ export default function EditApp({ appName }: { appName?: string }) {
   const { screenWidth } = useGlobalStore();
   const { setCached, cached, insideCloud, deleteCached, setInsideCloud } = useCachedStore();
   const { setAppType } = useSearchStore();
+  const { userSourcePrice, checkQuotaAllow, loadUserQuota } = useUserStore();
+  useEffect(() => {
+    loadUserQuota();
+  }, []);
 
   const detailName = useMemo(
     () => templateSource?.source?.defaults?.app_name?.value || '',
     [templateSource]
   );
+
+  const usage = useMemo(() => {
+    const usage = getResourceUsage(yamlList.map((item) => item.value));
+    return usage;
+  }, [yamlList]);
 
   const { data: platformEnvs } = useQuery(['getPlatformEnvs'], getPlatformEnv, {
     staleTime: 5 * 60 * 1000
@@ -126,6 +139,20 @@ export default function EditApp({ appName }: { appName?: string }) {
   }, [formHook, formOnchangeDebounce]);
 
   const submitSuccess = async () => {
+    const quoteCheckRes = checkQuotaAllow({
+      cpu: usage.cpu.max,
+      memory: usage.memory.max,
+      storage: usage.storage.max
+    });
+    if (quoteCheckRes) {
+      return toast({
+        status: 'warning',
+        title: t(quoteCheckRes),
+        duration: 5000,
+        isClosable: true
+      });
+    }
+    console.log('quoteCheckRes', quoteCheckRes);
     setIsLoading(true);
     try {
       if (!insideCloud) {
@@ -309,12 +336,26 @@ export default function EditApp({ appName }: { appName?: string }) {
             applyCb={() => formHook.handleSubmit(openConfirm(submitSuccess), submitError)()}
           />
           <Flex w="100%" mt="32px" flexDirection="column">
-            <Form
-              formHook={formHook}
-              pxVal={pxVal}
-              formSource={templateSource!}
-              platformEnvs={platformEnvs!}
-            />
+            {/* <Box mt={3} overflow={'hidden'}>
+              <QuotaBox />
+            </Box> */}
+            <Grid templateColumns="3fr 1fr" gap={6}>
+              <GridItem>
+                <Form
+                  formHook={formHook}
+                  pxVal={pxVal}
+                  formSource={templateSource!}
+                  platformEnvs={platformEnvs!}
+                />
+              </GridItem>
+              <GridItem>
+                {userSourcePrice && (
+                  <Box mt={3} overflow={'hidden'}>
+                    <PriceBox {...usage} />
+                  </Box>
+                )}
+              </GridItem>
+            </Grid>
             {/* <Yaml yamlList={yamlList} pxVal={pxVal}></Yaml> */}
             <ReadMe templateDetail={data?.templateYaml!} />
           </Flex>

@@ -196,6 +196,8 @@ func main() {
 		RequestEphemeralStorage: requestEphemeralStorage,
 		LimitEphemeralStorage:   limitEphemeralStorage,
 		DebugMode:               debugMode,
+		WebSocketImage:          webSocketImage,
+		HostPath:                hostPath,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Devbox")
 		os.Exit(1)

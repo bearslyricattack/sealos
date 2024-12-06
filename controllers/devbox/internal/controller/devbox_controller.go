@@ -59,6 +59,7 @@ type DevboxReconciler struct {
 
 	WebSocketImage       string
 	WebsocketProxyDomain string
+	IngressClass         string
 
 	client.Client
 	Scheme   *runtime.Scheme
@@ -481,7 +482,6 @@ func (r *DevboxReconciler) generateProxyIngressHost() string {
 
 func (r *DevboxReconciler) syncProxyIngress(ctx context.Context, devbox *devboxv1alpha1.Devbox) error {
 	pathType := networkingv1.PathTypePrefix
-	var className = "nginx"
 	ingressPath := []networkingv1.HTTPIngressPath{
 		{
 			Path:     "/",
@@ -498,7 +498,7 @@ func (r *DevboxReconciler) syncProxyIngress(ctx context.Context, devbox *devboxv
 	}
 
 	ingressSpec := networkingv1.IngressSpec{
-		IngressClassName: &className,
+		IngressClassName: &r.IngressClass,
 		Rules: []networkingv1.IngressRule{
 			{
 				Host: r.generateProxyIngressHost(),

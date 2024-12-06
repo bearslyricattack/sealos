@@ -75,7 +75,7 @@ func main() {
 	var limitEphemeralStorage string
 	var debugMode bool
 	var webSocketImage string
-	var hostPath string
+	var websocketProxyDomain string
 	flag.StringVar(&registryAddr, "registry-addr", "sealos.hub:5000", "The address of the registry")
 	flag.StringVar(&registryUser, "registry-user", "admin", "The user of the registry")
 	flag.StringVar(&registryPassword, "registry-password", "passw0rd", "The password of the registry")
@@ -96,7 +96,7 @@ func main() {
 	flag.StringVar(&requestEphemeralStorage, "request-ephemeral-storage", "500Mi", "The request value of ephemeral storage in devbox.")
 	flag.StringVar(&limitEphemeralStorage, "limit-ephemeral-storage", "10Gi", "The limit value of ephemeral storage in devbox.")
 	flag.StringVar(&webSocketImage, "websocket-image", "bearslyricattack/chisel:1.0", "The image name of devbox websocket proxy pod")
-	flag.StringVar(&hostPath, "host-path", "sealoshzh.site", "The host path of devbox ingress")
+	flag.StringVar(&websocketProxyDomain, "websocket-proxy-domain", "sealoshzh.site", "The websocket proxy domain of devbox ingress")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -197,7 +197,7 @@ func main() {
 		LimitEphemeralStorage:   limitEphemeralStorage,
 		DebugMode:               debugMode,
 		WebSocketImage:          webSocketImage,
-		HostPath:                hostPath,
+		WebsocketProxyDomain:    websocketProxyDomain,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Devbox")
 		os.Exit(1)

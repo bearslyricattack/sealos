@@ -610,7 +610,7 @@ func (r *DevboxReconciler) generateProxyPodJWT(ctx context.Context, devbox *devb
 	return signedToken, nil
 }
 
-func (r *DevboxReconciler) generateProxyPodEnv(ctx context.Context, devbox *devboxv1alpha1.Devbox, servicePorts []corev1.ServicePort) []corev1.EnvVar {
+func (r *DevboxReconciler) generateProxyPodEnv(ctx context.Context, devbox *devboxv1alpha1.Devbox, servicePorts []corev1.ServicePort) ([]corev1.EnvVar, error) {
 	var envVars []corev1.EnvVar
 	autoShutdownEnabled := devbox.Spec.AutoShutdownSpec.Enable && r.EnableAutoShutdown
 	envVars = append(envVars, corev1.EnvVar{
@@ -625,12 +625,16 @@ func (r *DevboxReconciler) generateProxyPodEnv(ctx context.Context, devbox *devb
 		})
 	}
 
-	if token, err := r.generateProxyPodJWT(ctx, devbox); err == nil {
-		envVars = append(envVars, corev1.EnvVar{
-			Name:  "JWT_TOKEN",
-			Value: token,
-		})
+	token, err := r.generateProxyPodJWT(ctx, devbox)
+	if err != nil {
+		return nil, err
 	}
+
+	envVars = append(envVars, corev1.EnvVar{
+		Name:  "JWT_TOKEN",
+		Value: token,
+	})
+
 	sshPort := "22"
 	for _, port := range servicePorts {
 		if port.Name == "devbox-ssh-port" {
@@ -653,11 +657,16 @@ func (r *DevboxReconciler) generateProxyPodEnv(ctx context.Context, devbox *devb
 		Value: r.ShutdownServerAddr,
 	})
 
-	return envVars
+	return envVars, nil
 }
 
 func (r *DevboxReconciler) generateProxyPodDeployment(ctx context.Context, devbox *devboxv1alpha1.Devbox, recLabels map[string]string, servicePorts []corev1.ServicePort) (*appsv1.Deployment, error) {
 	runtimecr, err := r.getRuntime(ctx, devbox)
+	if err != nil {
+		return nil, err
+	}
+
+	podEnv, err := r.generateProxyPodEnv(ctx, devbox, servicePorts)
 	if err != nil {
 		return nil, err
 	}
@@ -667,7 +676,7 @@ func (r *DevboxReconciler) generateProxyPodDeployment(ctx context.Context, devbo
 			{
 				Name:      "ws-proxy",
 				Image:     r.WebSocketImage,
-				Env:       r.generateProxyPodEnv(ctx, devbox, servicePorts),
+				Env:       podEnv,
 				Resources: helper.GenerateProxyPodResourceRequirements(),
 			},
 		},

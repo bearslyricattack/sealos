@@ -716,6 +716,9 @@ func (r *DevboxReconciler) syncProxyPod(ctx context.Context, devbox *devboxv1alp
 	if devbox.Spec.State == devboxv1alpha1.DevboxStateRunning {
 		if errors.IsNotFound(err) {
 			wsDeployment, err = r.generateProxyPodDeployment(ctx, devbox, recLabels, servicePorts)
+			if err != nil {
+				return err
+			}
 			if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, wsDeployment, func() error {
 				return controllerutil.SetControllerReference(devbox, wsDeployment, r.Scheme)
 			}); err != nil {

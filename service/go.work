@@ -8,7 +8,7 @@ use (
 	./exceptionmonitor
 	./launchpad
 	./pay
-	vlogs
+	./vlogs
 )
 
 replace (

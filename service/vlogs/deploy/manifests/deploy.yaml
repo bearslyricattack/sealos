@@ -2,9 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    app: launchpad-monitor
-  name: launchpad-monitor-config
+    app: launchpad-vlogs
+  name: launchpad-vlogs-config
   namespace: sealos
+
 data:
   config.yml: |
     server:
@@ -14,20 +15,20 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: launchpad-monitor
-  name: launchpad-monitor-deployment
+    app: launchpad-vlogs
+  name: launchpad-vlogs-deployment
   namespace: sealos
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: launchpad-monitor
+      app: launchpad-vlogs
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: launchpad-monitor
+        app: launchpad-vlogs
     spec:
       containers:
         - args:
@@ -73,8 +74,8 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: launchpad-monitor
-  name: launchpad-monitor
+    app: launchpad-vlogs
+  name: launchpad-vlogs
   namespace: sealos
 spec:
   ports:
@@ -83,4 +84,4 @@ spec:
       protocol: TCP
       targetPort: 8428
   selector:
-    app: launchpad-monitor
+    app: launchpad-vlogs

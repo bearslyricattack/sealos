@@ -1,3 +1,2 @@
 server:
   addr: ":8428"
-  path: "https://vvvvvlogs.usw.sailos.io"

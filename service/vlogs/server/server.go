@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/labring/sealos/service/pkg/auth"
 	"log"
 	"net/http"
 	"net/url"
@@ -41,19 +40,20 @@ func (vl *VLogsServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (vl *VLogsServer) queryLogsByParams(rw http.ResponseWriter, req *http.Request) {
-	kubeConfig, namespace, query, err := vl.generateParamsRequest(req)
+	//kubeConfig, namespace, query, err := vl.generateParamsRequest(req)
+	_, _, query, err := vl.generateParamsRequest(req)
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("Bad request (%s)", err), http.StatusBadRequest)
 		log.Printf("Bad request (%s)\n", err)
 		return
 	}
 
-	err = auth.Authenticate(namespace, kubeConfig)
-	if err != nil {
-		http.Error(rw, fmt.Sprintf("Authentication failed (%s)", err), http.StatusInternalServerError)
-		log.Printf("Authentication failed (%s)\n", err)
-		return
-	}
+	//err = auth.Authenticate(namespace, kubeConfig)
+	//if err != nil {
+	//	http.Error(rw, fmt.Sprintf("Authentication failed (%s)", err), http.StatusInternalServerError)
+	//	log.Printf("Authentication failed (%s)\n", err)
+	//	return
+	//}
 
 	fmt.Println("query: " + query)
 	err = request.QueryLogsByParams(vl.path, vl.username, vl.password, query, rw)
@@ -82,21 +82,10 @@ func (vl *VLogsServer) generateParamsRequest(req *http.Request) (string, string,
 	if vlogsReq.Namespace == "" {
 		return "", "", "", errors.New("invalid JSON data,namespace not found")
 	}
-	switch vlogsReq.JsonMode {
-	case "":
-		return "", "", "", errors.New("invalid JSON data,jsonMode not found")
-	case "false":
-		query, err = generateKeywordQuery(vlogsReq)
-		if err != nil {
-			return "", "", "", err
-		}
-	case "true":
-		query, err = generateJsonQuery(vlogsReq)
-		if err != nil {
-			return "", "", "", err
-		}
-	default:
-		return "", "", "", errors.New("invalid JSON data,jsonMode value err")
+	var vlogs VLogsQuery
+	query, err = vlogs.getQuery(vlogsReq)
+	if err != nil {
+		return "", "", "", err
 	}
 	return kubeConfig, vlogsReq.Namespace, query, nil
 }
@@ -115,6 +104,7 @@ func (v *VLogsQuery) getQuery(req *api.VlogsRequest) (string, error) {
 	}
 	v.generateDropQuery()
 	v.generateNumberQuery(req)
+	return v.query, nil
 }
 
 func (v *VLogsQuery) generateKeywordQuery(req *api.VlogsRequest) {

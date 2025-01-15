@@ -34,7 +34,6 @@ func (rs *RestartableServer) Serve(c *vlogsServer.Config) {
 		return
 	}
 	fmt.Printf("Serve on %s\n", c.Server.ListenAddress)
-
 	if err := hs.Serve(listener); err != nil {
 		fmt.Println(err)
 		return

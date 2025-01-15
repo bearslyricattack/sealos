@@ -101,84 +101,87 @@ func (vl *VLogsServer) generateParamsRequest(req *http.Request) (string, string,
 	return kubeConfig, vlogsReq.Namespace, query, nil
 }
 
-func generateKeywordQuery(req *api.VlogsRequest) (string, error) {
-	var builder strings.Builder
-	builder.WriteString(req.Keyword)
-	builder.WriteString(" ")
-	stream, err := generateStreamQuery(req)
-	if err != nil {
-		return "", err
-	}
-	return builder.String() + stream + generateCommonQuery(req) + generateDropQuery() + generateNumberQuery(req), nil
+type VLogsQuery struct {
+	query string
 }
 
-func generateJsonQuery(req *api.VlogsRequest) (string, error) {
-	stream, err := generateStreamQuery(req)
+func (v *VLogsQuery) getQuery(req *api.VlogsRequest) (string, error) {
+	v.generateKeywordQuery(req)
+	v.generateStreamQuery(req)
+	v.generateCommonQuery(req)
+	err := v.generateJsonQuery(req)
 	if err != nil {
 		return "", err
 	}
-	var builder strings.Builder
-	builder.WriteString(" | unpack_json")
-	if len(req.JsonQuery) == 0 {
-		return stream + generateCommonQuery(req) + builder.String() + generateDropQuery() + generateNumberQuery(req), nil
+	v.generateDropQuery()
+	v.generateNumberQuery(req)
+}
+
+func (v *VLogsQuery) generateKeywordQuery(req *api.VlogsRequest) {
+	if req.JsonMode != "true" {
+		var builder strings.Builder
+		builder.WriteString(req.Keyword)
+		builder.WriteString(" ")
+		v.query += builder.String()
 	}
-	for _, jsonQuery := range req.JsonQuery {
-		var item string
-		switch jsonQuery.Mode {
-		case "=":
-			item = fmt.Sprintf("| %s:=%s ", jsonQuery.Key, jsonQuery.Value)
-		case "!=":
-			item = fmt.Sprintf("| %s:(!=%s) ", jsonQuery.Key, jsonQuery.Value)
-		case "~":
-			item = fmt.Sprintf("| %s:%s ", jsonQuery.Key, jsonQuery.Value)
-		default:
-			return "", errors.New("invalid JSON data,jsonMode value err")
+}
+
+func (v *VLogsQuery) generateJsonQuery(req *api.VlogsRequest) error {
+	if req.JsonMode != "true" {
+		var builder strings.Builder
+		builder.WriteString(" | unpack_json")
+		if len(req.JsonQuery) > 0 {
+			for _, jsonQuery := range req.JsonQuery {
+				var item string
+				switch jsonQuery.Mode {
+				case "=":
+					item = fmt.Sprintf("| %s:=%s ", jsonQuery.Key, jsonQuery.Value)
+				case "!=":
+					item = fmt.Sprintf("| %s:(!=%s) ", jsonQuery.Key, jsonQuery.Value)
+				case "~":
+					item = fmt.Sprintf("| %s:%s ", jsonQuery.Key, jsonQuery.Value)
+				default:
+					return errors.New("invalid JSON data,jsonMode value err")
+				}
+				builder.WriteString(item)
+			}
 		}
-		builder.WriteString(item)
+		v.query += builder.String()
 	}
-	return stream + generateCommonQuery(req) + builder.String() + generateDropQuery() + generateNumberQuery(req), nil
+	return nil
 }
 
-func generateStreamQuery(req *api.VlogsRequest) (string, error) {
+func (v *VLogsQuery) generateStreamQuery(req *api.VlogsRequest) {
 	var builder strings.Builder
-	if len(req.Pod) == 0 && len(req.Container) == 0 {
-		item := fmt.Sprintf(`{namespace="%s"}`, req.Namespace)
-		builder.WriteString(item)
-		return builder.String(), nil
+	addItems := func(namespace string, key string, values []string) {
+		for i, value := range values {
+			builder.WriteString(fmt.Sprintf(`{%s="%s",namespace="%s"}`, key, value, namespace))
+			if i != len(values)-1 {
+				builder.WriteString(" OR ")
+			}
+		}
 	}
-	if len(req.Pod) == 0 {
+	switch {
+	case len(req.Pod) == 0 && len(req.Container) == 0:
+		builder.WriteString(fmt.Sprintf(`{namespace="%s"}`, req.Namespace))
+	case len(req.Pod) == 0:
+		addItems(req.Namespace, "container", req.Container)
+	case len(req.Container) == 0:
+		addItems(req.Namespace, "pod", req.Pod)
+	default:
 		for i, container := range req.Container {
-			item := fmt.Sprintf(`{container="%s",namespace="%s"}`, container, req.Namespace)
-			builder.WriteString(item)
-			if i != len(req.Pod)-1 {
-				builder.WriteString(" OR")
-			}
-		}
-		return builder.String(), nil
-	}
-	if len(req.Container) == 0 {
-		for i, pod := range req.Pod {
-			item := fmt.Sprintf(`{namespace="%s",pod="%s"}`, req.Namespace, pod)
-			builder.WriteString(item)
-			if i != len(req.Pod)-1 {
-				builder.WriteString(" OR")
-			}
-		}
-		return builder.String(), nil
-	}
-	for _, container := range req.Container {
-		for j, pod := range req.Pod {
-			item := fmt.Sprintf(`{container="%s",namespace="%s",pod="%s"}`, container, req.Namespace, pod)
-			builder.WriteString(item)
-			if j != len(req.Pod)-1 {
-				builder.WriteString(" OR")
+			for j, pod := range req.Pod {
+				builder.WriteString(fmt.Sprintf(`{container="%s",namespace="%s",pod="%s"}`, container, req.Namespace, pod))
+				if i != len(req.Container)-1 || j != len(req.Pod)-1 {
+					builder.WriteString(" OR ")
+				}
 			}
 		}
 	}
-	return builder.String(), nil
+	v.query += builder.String()
 }
 
-func generateCommonQuery(req *api.VlogsRequest) string {
+func (v *VLogsQuery) generateCommonQuery(req *api.VlogsRequest) {
 	var builder strings.Builder
 	item := fmt.Sprintf(`_time:%s app:="%s" `, req.Time, req.App)
 	builder.WriteString(item)
@@ -191,16 +194,16 @@ func generateCommonQuery(req *api.VlogsRequest) string {
 		item := fmt.Sprintf(`  | limit %s  `, req.Limit)
 		builder.WriteString(item)
 	}
-	return builder.String()
+	v.query += builder.String()
 }
 
-func generateDropQuery() string {
+func (v *VLogsQuery) generateDropQuery() {
 	var builder strings.Builder
 	builder.WriteString("| Drop _stream_id,_stream,app,container,job,namespace,node,pod ")
-	return builder.String()
+	v.query += builder.String()
 }
 
-func generateNumberQuery(req *api.VlogsRequest) string {
+func (v *VLogsQuery) generateNumberQuery(req *api.VlogsRequest) string {
 	var builder strings.Builder
 	if req.NumberMode == "true" {
 		item := fmt.Sprintf(" | stats by (_time:1%s) count() logs_total ", req.NumberLevel)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/labring/sealos/service/pkg/auth"
 	"log"
 	"net/http"
 	"net/url"
@@ -40,21 +41,20 @@ func (vl *VLogsServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (vl *VLogsServer) queryLogsByParams(rw http.ResponseWriter, req *http.Request) {
-	_, _, query, err := vl.generateParamsRequest(req)
+	namespace, kubeConfig, query, err := vl.generateParamsRequest(req)
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("Bad request (%s)", err), http.StatusBadRequest)
 		log.Printf("Bad request (%s)\n", err)
 		return
 	}
 
-	//err = auth.Authenticate(namespace, kubeConfig)
-	//if err != nil {
-	//	http.Error(rw, fmt.Sprintf("Authentication failed (%s)", err), http.StatusInternalServerError)
-	//	log.Printf("Authentication failed (%s)\n", err)
-	//	return
-	//}
+	err = auth.Authenticate(namespace, kubeConfig)
+	if err != nil {
+		http.Error(rw, fmt.Sprintf("Authentication failed (%s)", err), http.StatusInternalServerError)
+		log.Printf("Authentication failed (%s)\n", err)
+		return
+	}
 
-	fmt.Println("query: " + query)
 	err = request.QueryLogsByParams(vl.path, vl.username, vl.password, query, rw)
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("Query failed (%s)", err), http.StatusInternalServerError)

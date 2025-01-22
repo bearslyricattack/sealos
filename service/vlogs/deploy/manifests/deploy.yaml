@@ -40,7 +40,7 @@ spec:
               value: http://vmsingle-victoria-metrics-k8s-stack.vm.svc:8429
           image: ghcr.io/labring/sealos-launchpad-service:latest
           imagePullPolicy: Always
-          name: launchpad-monitor
+          name: vlogs-monitor
           ports:
             - containerPort: 8428
               protocol: TCP

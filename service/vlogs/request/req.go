@@ -37,7 +37,6 @@ func QueryLogsByParams(path string, username string, password string, query stri
 	if err != nil {
 		return err
 	}
-	fmt.Printf("URL: %s\n", req.URL.String())
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("HTTP req error: %v", err)

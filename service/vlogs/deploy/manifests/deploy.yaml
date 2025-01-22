@@ -5,7 +5,6 @@ metadata:
     app: service-vlogs
   name: service-vlogs-config
   namespace: sealos
-
 data:
   config.yml: |
     server:
@@ -28,14 +27,14 @@ spec:
   template:
     metadata:
       labels:
-        app: service-logs
+        app: service-vlogs
     spec:
       containers:
         - args:
             - /config/config.yml
           command:
             - /manager
-          image: ghcr.io/labring/sealos-launchpad-service:latest
+          image: bearslyricattack/vlogs:latest
           imagePullPolicy: Always
           name: service-vlogs
           ports:

@@ -31,17 +31,15 @@ func NewVLogsServer(config *Config) (*VLogsServer, error) {
 
 func (vl *VLogsServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	pathPrefix := ""
-	switch {
-	case req.URL.Path == pathPrefix+"/queryLogsByParams":
+	if req.URL.Path == pathPrefix+"/queryLogsByParams" {
 		vl.queryLogsByParams(rw, req)
-	default:
-		http.Error(rw, "Not found", http.StatusNotFound)
 		return
 	}
+	http.Error(rw, "Not found", http.StatusNotFound)
 }
 
 func (vl *VLogsServer) queryLogsByParams(rw http.ResponseWriter, req *http.Request) {
-	namespace, kubeConfig, query, err := vl.generateParamsRequest(req)
+	kubeConfig, namespace, query, err := vl.generateParamsRequest(req)
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("Bad request (%s)", err), http.StatusBadRequest)
 		log.Printf("Bad request (%s)\n", err)
@@ -71,6 +69,7 @@ func (vl *VLogsServer) generateParamsRequest(req *http.Request) (string, string,
 	} else {
 		return "", "", "", err
 	}
+	fmt.Println(kubeConfig)
 
 	var query string
 	vlogsReq := &api.VlogsRequest{}

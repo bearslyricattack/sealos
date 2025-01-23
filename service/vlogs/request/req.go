@@ -45,11 +45,10 @@ func QueryLogsByParams(path string, username string, password string, query stri
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("res error,err info: %d", resp)
-	} else {
-		_, err := io.Copy(rw, resp.Body)
-		if err != nil {
-			return err
-		}
+	}
+	_, err = io.Copy(rw, resp.Body)
+	if err != nil {
+		return err
 	}
 	return nil
 }

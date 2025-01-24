@@ -80,6 +80,7 @@ func (vl *VLogsServer) generateParamsRequest(req *http.Request) (string, string,
 	}
 	var vlogs VLogsQuery
 	query, err = vlogs.getQuery(vlogsReq)
+	fmt.Println(query)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -105,12 +106,10 @@ func (v *VLogsQuery) getQuery(req *api.VlogsRequest) (string, error) {
 }
 
 func (v *VLogsQuery) generateKeywordQuery(req *api.VlogsRequest) {
-	if req.JsonMode != "true" {
-		var builder strings.Builder
-		builder.WriteString(req.Keyword)
-		builder.WriteString(" ")
-		v.query += builder.String()
-	}
+	var builder strings.Builder
+	builder.WriteString(req.Keyword)
+	builder.WriteString(" ")
+	v.query += builder.String()
 }
 
 func (v *VLogsQuery) generateJsonQuery(req *api.VlogsRequest) error {
@@ -127,6 +126,8 @@ func (v *VLogsQuery) generateJsonQuery(req *api.VlogsRequest) error {
 					item = fmt.Sprintf("| %s:(!=%s) ", jsonQuery.Key, jsonQuery.Value)
 				case "~":
 					item = fmt.Sprintf("| %s:%s ", jsonQuery.Key, jsonQuery.Value)
+				case "!~":
+					item = fmt.Sprintf("| %s:(!~%s) ", jsonQuery.Key, jsonQuery.Value)
 				default:
 					return errors.New("invalid JSON data,jsonMode value err")
 				}

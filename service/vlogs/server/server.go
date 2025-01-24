@@ -69,8 +69,6 @@ func (vl *VLogsServer) generateParamsRequest(req *http.Request) (string, string,
 	} else {
 		return "", "", "", err
 	}
-	fmt.Println(kubeConfig)
-
 	var query string
 	vlogsReq := &api.VlogsRequest{}
 	err := json.NewDecoder(req.Body).Decode(&vlogsReq)
@@ -100,6 +98,7 @@ func (v *VLogsQuery) getQuery(req *api.VlogsRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	v.generateStdQuery(req)
 	v.generateDropQuery()
 	v.generateNumberQuery(req)
 	return v.query, nil
@@ -169,14 +168,19 @@ func (v *VLogsQuery) generateStreamQuery(req *api.VlogsRequest) {
 	v.query += builder.String()
 }
 
+func (v *VLogsQuery) generateStdQuery(req *api.VlogsRequest) {
+	var builder strings.Builder
+	if req.StderrMode == "true" {
+		item := fmt.Sprintf(`| stream:="stderr" `)
+		builder.WriteString(item)
+	}
+	v.query += builder.String()
+}
+
 func (v *VLogsQuery) generateCommonQuery(req *api.VlogsRequest) {
 	var builder strings.Builder
 	item := fmt.Sprintf(`_time:%s app:="%s" `, req.Time, req.App)
 	builder.WriteString(item)
-	if req.StderrMode == "true" {
-		item := fmt.Sprintf(` stream:="stderr" `)
-		builder.WriteString(item)
-	}
 	// if query number,dont use limit param
 	if req.NumberMode == "false" {
 		item := fmt.Sprintf(`  | limit %s  `, req.Limit)
@@ -187,7 +191,7 @@ func (v *VLogsQuery) generateCommonQuery(req *api.VlogsRequest) {
 
 func (v *VLogsQuery) generateDropQuery() {
 	var builder strings.Builder
-	builder.WriteString("| Drop _stream_id,_stream,app,container,job,namespace,node,pod ")
+	builder.WriteString("| Drop _stream_id,_stream,app,job,namespace,node")
 	v.query += builder.String()
 }
 

@@ -1,4 +1,4 @@
-IMG ?= bearslyricattack/vlogs:latest
+IMG ?= ghcr.io/labring/sealos-vlogs-service:latest
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))

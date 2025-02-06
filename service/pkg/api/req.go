@@ -71,7 +71,8 @@ type Stats struct {
 }
 
 type JsonQuery struct {
-	Key   string
+	Key string
+	// There are a total of four modes,"=" equal,"!" Not equal,"~" including,"!~" Not included.
 	Mode  string
 	Value string
 }

@@ -11,7 +11,7 @@ restserver for victoria logs
 1. Build and push your image to the location specified by `IMG`:
 
 ```sh
-make docker-build docker-push IMG=<some-registry>/sealos-cloud-database-monitor:tag
+make docker-build docker-push IMG=<some-registry>/sealos-vlogs-service:latest
 ```
 
 2. Deploy the restserver:

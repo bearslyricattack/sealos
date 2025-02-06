@@ -61,9 +61,13 @@ func CheckK8sHost(host string) error {
 	return nil
 }
 
-func Authenticate(ns, kc string) error {
+func (ac *AuthCache) Authenticate(ns, kc string) error {
 	if ns == "" {
 		return ErrNilNs
+	}
+	//use auth cache
+	if ac.Get(ns, kc) {
+		return nil
 	}
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
 	if err != nil {
@@ -100,7 +104,7 @@ func Authenticate(ns, kc string) error {
 		// fmt.Println(err.Error())
 		return fmt.Errorf("check resource access error: %v", err)
 	}
-
+	ac.Set(ns, kc)
 	return nil
 }
 

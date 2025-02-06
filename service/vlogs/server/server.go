@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/labring/sealos/service/pkg/api"
 	"github.com/labring/sealos/service/vlogs/request"
@@ -17,6 +18,7 @@ type VLogsServer struct {
 	path     string
 	username string
 	password string
+	ac       *auth.AuthCache
 }
 
 func NewVLogsServer(config *Config) (*VLogsServer, error) {
@@ -24,6 +26,7 @@ func NewVLogsServer(config *Config) (*VLogsServer, error) {
 		path:     config.Server.Path,
 		username: config.Server.Username,
 		password: config.Server.Password,
+		ac:       auth.NewAuthCache(5*time.Minute, 10000),
 	}
 	return vl, nil
 }
@@ -46,7 +49,7 @@ func (vl *VLogsServer) queryLogsByParams(rw http.ResponseWriter, req *http.Reque
 		return fmt.Errorf("bad request (%s)", err)
 	}
 
-	err = auth.Authenticate(namespace, kubeConfig)
+	err = vl.ac.Authenticate(namespace, kubeConfig)
 	if err != nil {
 		return fmt.Errorf("authentication failed (%s)", err)
 	}

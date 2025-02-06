@@ -34,7 +34,7 @@ spec:
             - /config/config.yml
           command:
             - /manager
-          image: bearslyricattack/vlogs:latest
+          image: ghcr.io/labring/sealos-vlogs-service:latest
           imagePullPolicy: Always
           name: service-vlogs
           ports:

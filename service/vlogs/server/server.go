@@ -137,8 +137,9 @@ func (v *VLogsQuery) generateJsonQuery(req *api.VlogsRequest) error {
 
 func (v *VLogsQuery) generateStreamQuery(req *api.VlogsRequest) {
 	var builder strings.Builder
-	// Generate query based only on namespace
+
 	if len(req.Pod) == 0 && len(req.Container) == 0 {
+		// Generate query based only on namespace
 		builder.WriteString(fmt.Sprintf(`{namespace="%s"}`, req.Namespace))
 	} else if len(req.Pod) == 0 {
 		// Generate query based on container

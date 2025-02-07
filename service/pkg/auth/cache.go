@@ -2,6 +2,7 @@ package auth
 
 import (
 	"container/list"
+	"crypto/sha256"
 	"fmt"
 	"sync"
 	"time"
@@ -35,11 +36,19 @@ func NewAuthCache(ttl time.Duration, capacity int) *AuthCache {
 	return ac
 }
 
+func hashKey(kc, ns string) string {
+	key := fmt.Sprintf("%s-%s", kc, ns)
+	hash := sha256.New()
+	hash.Write([]byte(key))
+	hashed := hash.Sum(nil)
+	return fmt.Sprintf("%x", hashed[:20])
+}
+
 func (ac *AuthCache) Set(ns, kc string) {
 	ac.mutex.Lock()
 	defer ac.mutex.Unlock()
 
-	key := fmt.Sprintf("%s-%s", kc, ns)
+	key := hashKey(kc, ns)
 	if len(ac.cache) >= ac.capacity {
 		// Evict least recently used entry
 		ac.evict()
@@ -53,7 +62,7 @@ func (ac *AuthCache) Get(ns, kc string) bool {
 	ac.mutex.RLock()
 	defer ac.mutex.RUnlock()
 
-	key := fmt.Sprintf("%s-%s", kc, ns)
+	key := hashKey(kc, ns)
 	_, exists := ac.cache[key]
 	if !exists {
 		return false

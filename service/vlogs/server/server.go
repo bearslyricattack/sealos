@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/labring/sealos/service/pkg/api"
-	"github.com/labring/sealos/service/pkg/auth"
 	"github.com/labring/sealos/service/vlogs/request"
 )
 
@@ -59,15 +58,15 @@ func (vl *VLogsServer) queryConvert(req *http.Request) (func(rw http.ResponseWri
 }
 
 func (vl *VLogsServer) authenticate(req *http.Request) (string, error) {
-	kubeConfig, namespace, query, err := vl.generateParamsRequest(req)
+	_, _, query, err := vl.generateParamsRequest(req)
 	if err != nil {
 		return "", fmt.Errorf("bad request (%s)", err)
 	}
 
-	err = auth.Authenticate(namespace, kubeConfig)
-	if err != nil {
-		return "", fmt.Errorf("authentication failed (%s)", err)
-	}
+	//err = auth.Authenticate(namespace, kubeConfig)
+	//if err != nil {
+	//	return "", fmt.Errorf("authentication failed (%s)", err)
+	//}
 	return query, nil
 }
 
@@ -151,6 +150,8 @@ func (vl *VLogsServer) generateParamsRequest(req *http.Request) (string, string,
 	if vlogsReq.Namespace == "" {
 		return "", "", "", fmt.Errorf("failed to get namespace")
 	}
+	vlogsReq.StderrMode = "false"
+	vlogsReq.NumberMode = "false"
 	var vlogs VLogsQuery
 	query, err = vlogs.getQuery(vlogsReq)
 	if err != nil {

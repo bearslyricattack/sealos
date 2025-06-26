@@ -1,0 +1,199 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "日志查询 API",
+    "description": "用于查询应用程序日志的 API，支持多种过滤选项",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/logs": {
+      "post": {
+        "summary": "getLogs",
+        "description": "根据多种过滤条件，获取指定应用程序的日志",
+        "operationId": "queryLogs",
+        "security": [
+          {
+            "kubeAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "app"
+                ],
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "description": "要查询日志的应用程序名称"
+                  },
+                  "time": {
+                    "type": "string",
+                    "description": "日志的时间范围（例如，'30d'表示30天）",
+                    "default": "30d"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "Kubernetes 命名空间"
+                  },
+                  "limit": {
+                    "type": "string",
+                    "description": "返回的日志条目最大数量",
+                    "default": "10"
+                  },
+                  "jsonMode": {
+                    "type": "string",
+                    "description": "是否将日志解析为JSON",
+                    "default": "true",
+                    "enum": [
+                      "true",
+                      "false"
+                    ]
+                  },
+                  "stderrMode": {
+                    "type": "string",
+                    "description": "是否包含标准错误日志",
+                    "default": "false",
+                    "enum": [
+                      "true",
+                      "false"
+                    ]
+                  },
+                  "numberMode": {
+                    "type": "string",
+                    "description": "是否启用数字模式",
+                    "default": "false",
+                    "enum": [
+                      "true",
+                      "false"
+                    ]
+                  },
+                  "numberLevel": {
+                    "type": "string",
+                    "description": "数字模式的日志级别"
+                  },
+                  "pod": {
+                    "type": "array",
+                    "description": "按Pod名称过滤日志",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "container": {
+                    "type": "array",
+                    "description": "按容器名称过滤日志",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "keyword": {
+                    "type": "string",
+                    "description": "在日志中搜索的文本"
+                  },
+                  "jsonQuery": {
+                    "type": "array",
+                    "description": "结构化日志的JSON查询过滤器",
+                    "items": {
+                      "type": "object",
+                      "description": "JSON过滤器项"
+                    }
+                  },
+                  "exportMode": {
+                    "type": "boolean",
+                    "description": "是否为导出日志模式",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "data": {
+                      "type": "string",
+                      "description": "文本格式的日志数据"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求错误 - 缺少必需参数",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "description": "HTTP状态码"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "错误信息"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "方法不允许",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "description": "HTTP状态码"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "错误信息"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "description": "HTTP状态码"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "错误信息"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

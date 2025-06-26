@@ -1,0 +1,132 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Manage Database API",
+    "version": "1.0.0",
+    "description": "API for managing database clusters, including creation, editing, and listing."
+  },
+  "paths": {
+    "/api/getDBList": {
+      "get": {
+        "summary": "getDatabaseList",
+        "description": "列出当前命名空间下的所有数据库资源"
+      }
+    },
+    "/api/createDB": {
+      "post": {
+        "summary": "createOrUpdateDatabase",
+        "description": "根据传入的 dbForm 信息创建或编辑数据库集群，并支持自动备份配置。需要传入dbform对象和isedit字段，",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["isEdit", "dbForm"],
+                "properties": {
+                  "isEdit": {
+                    "type": "boolean",
+                    "description": "是否为编辑模式，true 为编辑，false 为创建"
+                  },
+                  "dbForm": {
+                    "type": "object",
+                    "description": "创建或者更新数据库集群的结构体，参数为dbName，dbType，dbVersion，cpu，memory，replicas，storage，terminationPolicy",
+                    "required": [
+                      "dbName",
+                      "dbType",
+                      "dbVersion",
+                      "cpu",
+                      "memory",
+                      "replicas",
+                      "storage",
+                      "terminationPolicy"
+                    ],
+                    "properties": {
+                      "dbName": {
+                        "type": "string",
+                        "description": "数据库名称"
+                      },
+                      "dbType": {
+                        "type": "string",
+                        "description": "数据库类型",
+                        "enum": ["postgresql", "mysql", "redis"]
+                      },
+                      "dbVersion": {
+                        "description": "数据库版本",
+                        "type": "string"
+                      },
+                      "cpu": {
+                        "type": "number"
+                      },
+                      "memory": {
+                        "type": "integer"
+                      },
+                      "replicas": {
+                        "type": "integer"
+                      },
+                      "storage": {
+                        "type": "number"
+                      },
+                      "terminationPolicy": {
+                        "type": "string",
+                        "enum": ["Delete", "Retain", "WipeOut"]
+                      },
+                      "labels": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "autoBackup": {
+                        "type": "object",
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "schedule": {
+                            "type": "string",
+                            "example": "0 2 * * *"
+                          },
+                          "retention": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "backupInfo": {
+                    "type": "object",
+                    "required": [
+                      "storageProvider",
+                      "bucket",
+                      "region",
+                      "accessKey",
+                      "secretKey"
+                    ],
+                    "properties": {
+                      "storageProvider": {
+                        "type": "string"
+                      },
+                      "bucket": {
+                        "type": "string"
+                      },
+                      "region": {
+                        "type": "string"
+                      },
+                      "accessKey": {
+                        "type": "string"
+                      },
+                      "secretKey": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

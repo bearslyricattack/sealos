@@ -10,8 +10,6 @@ export async function executeHttpRequest(
   headers: Record<string, string> = {}
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   console.error(`Executing tool: ${toolId} (${toolName})`);
-
-  // Only keep authentication-related headers
   const cleanedHeaders: Record<string, string> = {};
 
   // Preserve authorization-related headers
@@ -21,8 +19,6 @@ export async function executeHttpRequest(
   if (headers.Authorization) {
     cleanedHeaders.Authorization = headers.Authorization;
   }
-  // Output cleaned headers
-  console.log(`Transformed headers: ${JSON.stringify(cleanedHeaders, null, 2)}`);
   try {
     const [method, ...pathParts] = toolId.split('-');
     const path = '/' + pathParts.join('/').replace(/-/g, '/');
@@ -49,12 +45,7 @@ export async function executeHttpRequest(
     } else {
       config.data = params;
     }
-    console.error(`Processed parameters:`, config.params || config.data);
-    console.error('Final request config:', config);
     const response = await axios(config);
-    console.error('Response status:', response.status);
-    console.error('Response headers:', response.headers);
-    console.error('Response data:', response.data);
     return {
       content: [
         {

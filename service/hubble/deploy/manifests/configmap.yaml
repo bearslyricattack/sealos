@@ -9,7 +9,7 @@ data:
     auth:
       whiteList: ""
     http:
-      port: ":8080"
+      port: ":8428"
     hubble:
       addr: "hubble-relay.kube-system.svc.cluster.local:443"
     redis:

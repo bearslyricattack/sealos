@@ -1,0 +1,119 @@
+# Sealos Monitoring Service Configuration
+# This file provides a comprehensive example of all available configuration options
+
+# ============================================================================
+# Server Configuration
+# ============================================================================
+addr: ":8080"                    # Server listen address
+logLevel: "info"                 # Log level: debug, info, warn, error
+enablePprof: false               # Enable pprof profiling endpoints
+readTimeoutSeconds: 30           # HTTP read timeout
+writeTimeoutSeconds: 30          # HTTP write timeout
+
+# ============================================================================
+# Metrics Configuration
+# ============================================================================
+metricsHost: "http://victoria-metrics:8428"  # Victoria Metrics/Prometheus endpoint
+
+metrics:
+  # HTTP client timeout settings
+  timeoutSeconds: 30             # Total request timeout
+  dialTimeoutSeconds: 30         # TCP connection dial timeout
+  tlsHandshakeTimeoutSeconds: 10 # TLS handshake timeout
+  expectContinueTimeoutSeconds: 1 # Expect: 100-continue timeout
+
+  # Connection pool settings (critical for performance)
+  maxIdleConns: 100              # Maximum idle connections across all hosts
+  maxIdleConnsPerHost: 10        # Maximum idle connections per host
+  maxConnsPerHost: 0             # Maximum connections per host (0 = unlimited)
+  idleConnTimeoutSeconds: 90     # How long idle connections are kept alive
+  keepAliveSeconds: 30           # TCP keep-alive interval
+
+  # Performance tuning
+  disableCompression: true       # Disable compression to save CPU (metrics are compact)
+  disableKeepAlives: false       # Set to true to disable HTTP keep-alive
+
+# ============================================================================
+# Kubernetes Configuration
+# ============================================================================
+kubernetesHost: ""               # Kubernetes API host (auto-detected from env if empty)
+whitelistHosts: ""               # Comma-separated list of allowed K8s hosts
+
+kubernetes:
+  serviceHost: ""                # K8s API host (from KUBERNETES_SERVICE_HOST)
+  servicePort: ""                # K8s API port (from KUBERNETES_SERVICE_PORT)
+  whitelistHosts: ""             # Allowed K8s API hosts (comma-separated)
+  cacheTTLMinutes: 5             # Authentication cache TTL in minutes
+
+# ============================================================================
+# Service-Specific Configuration
+# ============================================================================
+
+# Minio configuration
+minio:
+  instance: "object-storage.objectstorage-system.svc.cluster.local:80"
+
+# Database configuration
+database:
+  # Add database-specific settings here if needed
+
+# ============================================================================
+# Performance Optimization
+# ============================================================================
+performance:
+  # Response caching (optional, disabled by default)
+  enableResponseCache: false     # Enable response-level caching
+  responseCacheTTLSeconds: 60    # Cache TTL for responses
+  responseCacheMaxSize: 1000     # Maximum number of cached responses
+
+  # Query caching (optional, disabled by default)
+  enableQueryCache: false        # Enable query result caching
+  queryCacheTTLSeconds: 300      # Cache TTL for query results (5 minutes)
+
+  # Buffer pool settings
+  readBufferSize: 4096           # Read buffer size in bytes
+  writeBufferSize: 4096          # Write buffer size in bytes
+
+# ============================================================================
+# Configuration Notes
+# ============================================================================
+#
+# Environment Variable Overrides:
+# The following environment variables will override config file values:
+# - METRICS_HOST: Overrides metricsHost
+# - KUBERNETES_SERVICE_HOST: Overrides kubernetes.serviceHost
+# - KUBERNETES_SERVICE_PORT: Overrides kubernetes.servicePort
+# - WHITELIST_KUBERNETES_HOSTS: Overrides kubernetes.whitelistHosts
+# - OBJECT_STORAGE_INSTANCE: Overrides minio.instance
+#
+# Performance Tuning Tips:
+#
+# 1. Connection Pooling:
+#    - maxIdleConns: Set to handle your expected concurrent load
+#      Example: 100 connections = ~1000 req/s capacity
+#    - maxIdleConnsPerHost: Typically 10-20 for single metrics host
+#    - keepAliveSeconds: 30s recommended for most scenarios
+#
+# 2. For High-Load Scenarios (>1000 req/s):
+#    - Increase maxIdleConns to 200-500
+#    - Increase maxIdleConnsPerHost to 20-50
+#    - Consider enabling response caching
+#    - Monitor connection pool metrics
+#
+# 3. For Low-Latency Requirements:
+#    - Keep disableCompression: true
+#    - Set dialTimeoutSeconds to 10-15
+#    - Reduce idleConnTimeoutSeconds to 60
+#
+# 4. For Memory-Constrained Environments:
+#    - Reduce maxIdleConns to 20-50
+#    - Reduce maxIdleConnsPerHost to 5
+#    - Set maxConnsPerHost to limit total connections
+#    - Disable caching features
+#
+# 5. Connection Pool vs VM Connections:
+#    - Each idle connection in the pool maintains a TCP connection to Victoria Metrics
+#    - VM can handle 1000s of concurrent connections efficiently
+#    - Reusing connections avoids TCP handshake overhead (~1-3ms per connection)
+#    - Keep-alive prevents connection churn and improves latency
+#

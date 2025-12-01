@@ -25,8 +25,8 @@ func NewLaunchpadHandler(cfg *config.ServerConfig) (*LaunchpadHandler, error) {
 	}
 	metricsHost := cfg.MetricsHost
 
-	// Create metrics client with connection pooling
-	client := metrics.NewClient(metricsHost)
+	// Create metrics client with configuration-based connection pooling
+	client := metrics.NewClientWithConfig(metricsHost, cfg)
 
 	return &LaunchpadHandler{
 		metricsHost: metricsHost,

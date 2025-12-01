@@ -3,7 +3,6 @@ package handler
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -26,14 +25,14 @@ func NewMinioHandler(cfg *config.ServerConfig) (*MinioHandler, error) {
 	}
 	metricsHost := cfg.MetricsHost
 
-	// Get Minio instance identifier
-	minioInstance := os.Getenv("OBJECT_STORAGE_INSTANCE")
+	// Get Minio instance from config (environment variable override already applied)
+	minioInstance := cfg.Minio.Instance
 	if minioInstance == "" {
 		minioInstance = "object-storage.objectstorage-system.svc.cluster.local:80"
 	}
 
-	// Create metrics client with connection pooling
-	client := metrics.NewClient(metricsHost)
+	// Create metrics client with configuration-based connection pooling
+	client := metrics.NewClientWithConfig(metricsHost, cfg)
 
 	return &MinioHandler{
 		metricsHost:   metricsHost,

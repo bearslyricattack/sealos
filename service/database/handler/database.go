@@ -23,8 +23,8 @@ func NewDatabaseHandler(cfg *config.ServerConfig) (*DatabaseHandler, error) {
 	}
 	metricsHost := cfg.MetricsHost
 
-	// Create metrics client with connection pooling
-	client := metrics.NewClient(metricsHost)
+	// Create metrics client with configuration-based connection pooling
+	client := metrics.NewClientWithConfig(metricsHost, cfg)
 
 	return &DatabaseHandler{
 		metricsHost: metricsHost,

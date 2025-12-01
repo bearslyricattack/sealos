@@ -45,8 +45,9 @@ func NewServer(cfg *config.ServerConfig) (*Server, error) {
 		router.Use(gin.Logger())
 	}
 
-	// Create authenticator with 5-minute cache TTL
-	authenticator := auth.NewAuthenticator(5 * time.Minute)
+	// Create authenticator with configured cache TTL
+	cacheTTL := cfg.GetKubernetesCacheTTL()
+	authenticator := auth.NewAuthenticator(cacheTTL)
 
 	httpServer := &http.Server{
 		Addr:         cfg.ListenAddress,

@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// Create Database handler
-	dbHandler, err := handler.NewDatabaseHandler()
+	dbHandler, err := handler.NewDatabaseHandler(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create database handler: %v", err)
 	}

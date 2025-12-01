@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/labring/sealos/service/pkg/api"
+	"github.com/labring/sealos/service/pkg/config"
 )
 
 const (
@@ -30,32 +31,93 @@ type Client struct {
 	mu         sync.RWMutex
 }
 
-// NewClient creates a new metrics client with connection pooling.
+// NewClient creates a new metrics client with default connection pooling.
 func NewClient(baseURL string) *Client {
+	return NewClientWithConfig(baseURL, nil)
+}
+
+// NewClientWithConfig creates a new metrics client with custom configuration.
+func NewClientWithConfig(baseURL string, cfg *config.ServerConfig) *Client {
+	// Use defaults if no config provided
+	var (
+		timeout               = defaultTimeout
+		maxIdleConns          = defaultMaxIdleConns
+		maxIdleConnsPerHost   = defaultMaxConnsPerHost
+		idleConnTimeout       = defaultIdleConnTimeout
+		dialTimeout           = 30 * time.Second
+		keepAlive             = 30 * time.Second
+		tlsHandshakeTimeout   = 10 * time.Second
+		expectContinueTimeout = 1 * time.Second
+		disableCompression    = true
+		disableKeepAlives     = false
+		maxConnsPerHost       = 0
+	)
+
+	// Apply config if provided
+	if cfg != nil {
+		timeout = cfg.GetMetricsTimeout()
+		maxIdleConns = cfg.Metrics.MaxIdleConns
+		if maxIdleConns <= 0 {
+			maxIdleConns = defaultMaxIdleConns
+		}
+		maxIdleConnsPerHost = cfg.Metrics.MaxIdleConnsPerHost
+		if maxIdleConnsPerHost <= 0 {
+			maxIdleConnsPerHost = defaultMaxConnsPerHost
+		}
+		idleConnTimeout = cfg.GetMetricsIdleConnTimeout()
+		dialTimeout = cfg.GetMetricsDialTimeout()
+		keepAlive = cfg.GetMetricsKeepAlive()
+		tlsHandshakeTimeout = cfg.GetMetricsTLSHandshakeTimeout()
+		expectContinueTimeout = cfg.GetMetricsExpectContinueTimeout()
+		disableCompression = cfg.Metrics.DisableCompression
+		disableKeepAlives = cfg.Metrics.DisableKeepAlives
+		maxConnsPerHost = cfg.Metrics.MaxConnsPerHost
+	}
+
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   dialTimeout,
+			KeepAlive: keepAlive,
 		}).DialContext,
-		MaxIdleConns:          defaultMaxIdleConns,
-		MaxIdleConnsPerHost:   defaultMaxConnsPerHost,
-		IdleConnTimeout:       defaultIdleConnTimeout,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		// Enable HTTP/2
-		ForceAttemptHTTP2: true,
-		// Disable compression to save CPU (metrics are already compact)
-		DisableCompression: true,
+		MaxIdleConns:          maxIdleConns,
+		MaxIdleConnsPerHost:   maxIdleConnsPerHost,
+		IdleConnTimeout:       idleConnTimeout,
+		TLSHandshakeTimeout:   tlsHandshakeTimeout,
+		ExpectContinueTimeout: expectContinueTimeout,
+		DisableCompression:    disableCompression,
+		DisableKeepAlives:     disableKeepAlives,
+		MaxConnsPerHost:       maxConnsPerHost,
+		ForceAttemptHTTP2:     true,
+		// Use buffer pool for better memory efficiency
+		WriteBufferSize: getBufferSize(cfg, true),
+		ReadBufferSize:  getBufferSize(cfg, false),
 	}
 
 	return &Client{
 		httpClient: &http.Client{
 			Transport: transport,
-			Timeout:   defaultTimeout,
+			Timeout:   timeout,
 		},
 		baseURL: baseURL,
 	}
+}
+
+// getBufferSize returns the buffer size from config or default.
+func getBufferSize(cfg *config.ServerConfig, write bool) int {
+	if cfg == nil {
+		return 4096
+	}
+	if write {
+		if cfg.Performance.WriteBufferSize > 0 {
+			return cfg.Performance.WriteBufferSize
+		}
+	} else {
+		if cfg.Performance.ReadBufferSize > 0 {
+			return cfg.Performance.ReadBufferSize
+		}
+	}
+	return 4096
 }
 
 // Query executes an instant query against the metrics endpoint.

@@ -62,8 +62,33 @@ metadata:
   namespace: objectstorage-system
 data:
   config.yml: |
-    server:
-      addr: ":9090"
+    # Object Storage (Minio) Monitor Service Configuration
+    addr: ":9090"
+    logLevel: "info"
+
+    # Victoria Metrics endpoint (set via environment variable PROMETHEUS_SERVICE_HOST)
+    # metricsHost will be read from METRICS_HOST env var
+
+    # Minio instance (set via environment variable OBJECT_STORAGE_INSTANCE)
+    minio:
+      instance: "object-storage.objectstorage-system.svc.cluster.local:80"
+
+    # Production-optimized connection pool
+    metrics:
+      maxIdleConns: 100
+      maxIdleConnsPerHost: 20
+      idleConnTimeoutSeconds: 90
+      keepAliveSeconds: 30
+      disableCompression: true
+
+    # Kubernetes authentication cache
+    kubernetes:
+      cacheTTLMinutes: 5
+
+    # Performance tuning
+    performance:
+      readBufferSize: 4096
+      writeBufferSize: 4096
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -92,7 +117,7 @@ spec:
         env:
         - name: OBJECT_STORAGE_INSTANCE
           value: object-storage.objectstorage-system.svc.cluster.local:80
-        - name: PROMETHEUS_SERVICE_HOST
+        - name: METRICS_HOST
           value: http://vmselect-victoria-metrics-k8s-stack.vm.svc:8481/select/0/prometheus/
         image: ghcr.io/labring/sealos-minio-service:latest
         imagePullPolicy: Always

@@ -7,8 +7,29 @@ metadata:
   namespace: sealos
 data:
   config.yml: |
-    server:
-      addr: ":8428"
+    # Launchpad Monitor Service Configuration
+    addr: ":8428"
+    logLevel: "info"
+
+    # Victoria Metrics endpoint (set via environment variable VM_SERVICE_HOST)
+    # metricsHost will be read from METRICS_HOST env var
+
+    # Production-optimized connection pool
+    metrics:
+      maxIdleConns: 100
+      maxIdleConnsPerHost: 20
+      idleConnTimeoutSeconds: 90
+      keepAliveSeconds: 30
+      disableCompression: true
+
+    # Kubernetes authentication cache
+    kubernetes:
+      cacheTTLMinutes: 5
+
+    # Performance tuning
+    performance:
+      readBufferSize: 4096
+      writeBufferSize: 4096
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -35,7 +56,7 @@ spec:
           command:
             - /manager
           env:
-            - name: VM_SERVICE_HOST
+            - name: METRICS_HOST
               value: http://vmsingle-victoria-metrics-k8s-stack.vm.svc:8429
           image: ghcr.io/labring/sealos-launchpad-service:latest
           imagePullPolicy: Always

@@ -3,10 +3,10 @@ package handler
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/labring/sealos/service/pkg/api"
+	"github.com/labring/sealos/service/pkg/config"
 	"github.com/labring/sealos/service/pkg/metrics"
 )
 
@@ -17,16 +17,11 @@ type DatabaseHandler struct {
 }
 
 // NewDatabaseHandler creates a new DatabaseHandler.
-func NewDatabaseHandler() (*DatabaseHandler, error) {
-	// Get Prometheus/Victoria Metrics host from environment
-	metricsHost := os.Getenv("PROMETHEUS_SERVICE_HOST")
-	if metricsHost == "" {
-		// Fallback to VM_SERVICE_HOST for compatibility
-		metricsHost = os.Getenv("VM_SERVICE_HOST")
-	}
-	if metricsHost == "" {
+func NewDatabaseHandler(cfg *config.ServerConfig) (*DatabaseHandler, error) {
+	if len(cfg.MetricsHost) == 0 {
 		return nil, api.ErrNoMetricsHost
 	}
+	metricsHost := cfg.MetricsHost
 
 	// Create metrics client with connection pooling
 	client := metrics.NewClient(metricsHost)

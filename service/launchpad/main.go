@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// Create Launchpad handler
-	launchpadHandler, err := handler.NewLaunchpadHandler()
+	launchpadHandler, err := handler.NewLaunchpadHandler(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create launchpad handler: %v", err)
 	}

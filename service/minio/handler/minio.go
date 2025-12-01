@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/labring/sealos/service/pkg/api"
+	"github.com/labring/sealos/service/pkg/config"
 	"github.com/labring/sealos/service/pkg/metrics"
 )
 
@@ -19,16 +20,11 @@ type MinioHandler struct {
 }
 
 // NewMinioHandler creates a new MinioHandler.
-func NewMinioHandler() (*MinioHandler, error) {
-	// Get Prometheus/Victoria Metrics host from environment
-	metricsHost := os.Getenv("PROMETHEUS_SERVICE_HOST")
-	if metricsHost == "" {
-		// Fallback to VM_SERVICE_HOST for compatibility
-		metricsHost = os.Getenv("VM_SERVICE_HOST")
-	}
-	if metricsHost == "" {
+func NewMinioHandler(cfg *config.ServerConfig) (*MinioHandler, error) {
+	if len(cfg.MetricsHost) == 0 {
 		return nil, api.ErrNoMetricsHost
 	}
+	metricsHost := cfg.MetricsHost
 
 	// Get Minio instance identifier
 	minioInstance := os.Getenv("OBJECT_STORAGE_INSTANCE")

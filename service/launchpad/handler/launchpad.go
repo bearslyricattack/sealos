@@ -4,11 +4,11 @@ package handler
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/labring/sealos/service/pkg/api"
+	"github.com/labring/sealos/service/pkg/config"
 	"github.com/labring/sealos/service/pkg/metrics"
 )
 
@@ -19,16 +19,11 @@ type LaunchpadHandler struct {
 }
 
 // NewLaunchpadHandler creates a new LaunchpadHandler.
-func NewLaunchpadHandler() (*LaunchpadHandler, error) {
-	// Get Victoria Metrics host from environment
-	metricsHost := os.Getenv("VM_SERVICE_HOST")
-	if metricsHost == "" {
-		// Fallback to PROMETHEUS_SERVICE_HOST for compatibility
-		metricsHost = os.Getenv("PROMETHEUS_SERVICE_HOST")
-	}
-	if metricsHost == "" {
+func NewLaunchpadHandler(cfg *config.ServerConfig) (*LaunchpadHandler, error) {
+	if len(cfg.MetricsHost) == 0 {
 		return nil, api.ErrNoMetricsHost
 	}
+	metricsHost := cfg.MetricsHost
 
 	// Create metrics client with connection pooling
 	client := metrics.NewClient(metricsHost)

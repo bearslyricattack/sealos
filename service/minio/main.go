@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// Create Minio handler
-	minioHandler, err := handler.NewMinioHandler()
+	minioHandler, err := handler.NewMinioHandler(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create minio handler: %v", err)
 	}

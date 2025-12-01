@@ -180,7 +180,6 @@ func (a *Authenticator) getClient(config *rest.Config) (*kubernetes.Clientset, e
 	return client, nil
 }
 
-// checkAPIServer verifies that the Kubernetes API server is healthy.
 func (a *Authenticator) checkAPIServer(config *rest.Config) error {
 	// Check cache for API server health
 	healthKey := "apiserver::" + config.Host

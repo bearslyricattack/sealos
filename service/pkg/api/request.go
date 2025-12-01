@@ -45,9 +45,5 @@ type MinioRequest struct {
 
 // Common errors
 var (
-	ErrNoMetricsHost   = errors.New("unable to get the metrics host from environment")
-	ErrUncompleteParam = errors.New("incomplete parameters: at least provide both namespace and query")
-	ErrEmptyKubeconfig = errors.New("empty kubeconfig")
-	ErrNilNamespace    = errors.New("namespace not found")
-	ErrInvalidQuery    = errors.New("invalid query type")
+	ErrNoMetricsHost = errors.New("unable to get the metrics host from environment")
 )

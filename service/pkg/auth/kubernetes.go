@@ -258,27 +258,6 @@ func (a *Authenticator) ClearCache() {
 	a.cache = sync.Map{}
 }
 
-// GetKubeconfigHost extracts the host from a kubeconfig.
-func GetKubeconfigHost(kubeconfig string) (string, error) {
-	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
-	if err != nil {
-		return "", fmt.Errorf("invalid kubeconfig: %w", err)
-	}
-	return config.Host, nil
-}
-
-// GetKubeconfigUser extracts the username from a kubeconfig.
-func GetKubeconfigUser(kubeconfig string) (string, error) {
-	config, err := clientcmd.Load([]byte(kubeconfig))
-	if err != nil {
-		return "", fmt.Errorf("invalid kubeconfig: %w", err)
-	}
-	for user := range config.AuthInfos {
-		return user, nil
-	}
-	return "", errors.New("no user found in kubeconfig")
-}
-
 // getKubernetesHostFromEnv constructs the Kubernetes API host from environment variables.
 func getKubernetesHostFromEnv() string {
 	host := os.Getenv("KUBERNETES_SERVICE_HOST")
@@ -298,14 +277,4 @@ var defaultAuthenticator = NewAuthenticator(5 * time.Minute)
 // This is provided for backward compatibility.
 func Authenticate(namespace, kubeconfig string) error {
 	return defaultAuthenticator.Authenticate(namespace, kubeconfig)
-}
-
-// SetCacheTTL updates the cache TTL for the global authenticator.
-func SetCacheTTL(ttl time.Duration) {
-	defaultAuthenticator.cacheTTL = ttl
-}
-
-// ClearCache clears the global authentication cache.
-func ClearCache() {
-	defaultAuthenticator.ClearCache()
 }

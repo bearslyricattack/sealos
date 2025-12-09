@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/labring/sealos/service/database/internal/service"
@@ -20,21 +21,46 @@ func NewDatabaseHandler(service *service.DatabaseService) *DatabaseHandler {
 	}
 }
 
-// HandleQuery handles database query requests
-func (h *DatabaseHandler) HandleQuery(c *gin.Context) (interface{}, error) {
-	// Parse request
+// HandleQuery 处理数据库查询请求
+func (h *DatabaseHandler) HandleQuery(c *gin.Context) {
+	// 1. 解析请求
 	req, err := h.parseRequest(c)
 	if err != nil {
-		return nil, err
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "请求参数解析失败",
+			"error":   err.Error(),
+		})
+		return
 	}
 
-	// Validate request
+	// 2. 验证请求
 	if err := h.validateRequest(req); err != nil {
-		return nil, err
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "请求参数验证失败",
+			"error":   err.Error(),
+		})
+		return
 	}
 
-	// Execute query via service layer
-	return h.service.ExecuteQuery(c.Request.Context(), req)
+	// 3. 通过服务层执行查询
+	result, err := h.service.ExecuteQuery(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "查询执行失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 4. 返回成功响应
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "查询成功",
+		"data":    result,
+	})
 }
 
 // parseRequest extracts request parameters from context

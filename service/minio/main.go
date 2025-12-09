@@ -1,35 +1,98 @@
+// Package main is the entry point for the Minio monitoring service.
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	minioserver "github.com/labring/sealos/service/minio/server"
-	"github.com/labring/sealos/service/pkg/server"
+	"github.com/gin-gonic/gin"
+	"github.com/labring/sealos/service/minio/handler"
+	"github.com/labring/sealos/service/pkg/config"
+	pkgHandler "github.com/labring/sealos/service/pkg/handler"
 )
 
 func main() {
+	// Setup logging
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// Parse command-line flags
+	configFile := flag.String("config", "/config/config.yml", "path to configuration file")
 	flag.Parse()
 
-	cf := flag.Arg(0)
-	if cf == "" {
-		fmt.Println("The config file is not specified")
-		return
+	// Override with positional argument if provided (backward compatibility)
+	if flag.NArg() > 0 {
+		*configFile = flag.Arg(0)
 	}
 
-	config, err := server.InitConfig(cf)
+	// Load configuration
+	cfg, err := config.LoadConfig(*configFile)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	rs := minioserver.MinioServer{
-		ConfigFile: cf,
+	// Create server
+	server, err := pkgHandler.NewServer(cfg)
+	if err != nil {
+		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	rs.Serve(config)
+	// Create Minio handler
+	minioHandler, err := handler.NewMinioHandler(cfg)
+	if err != nil {
+		log.Fatalf("Failed to create minio handler: %v", err)
+	}
+	defer minioHandler.Close()
+
+	log.Printf("Minio monitoring service using metrics host: %s", minioHandler.GetMetricsHost())
+	log.Printf("Minio instance: %s", minioHandler.GetMinioInstance())
+
+	// Register routes
+	// POST /q - Main query endpoint (new API)
+	server.RegisterQueryHandler("/q", minioHandler.HandleQuery)
+
+	// POST /query - Legacy query endpoint (deprecated but maintained for compatibility)
+	server.RegisterQueryHandler("/query", minioHandler.HandleQuery)
+
+	// Health check endpoint
+	server.Router().GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "healthy",
+			"service": "minio",
+		})
+	})
+
+	// Readiness check endpoint
+	server.Router().GET("/readyz", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	// Start server in a goroutine
+	go func() {
+		if err := server.Start(); err != nil {
+			log.Fatalf("Server failed: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	// Graceful shutdown with 5-second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited")
 }

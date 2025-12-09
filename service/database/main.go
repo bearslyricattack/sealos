@@ -1,35 +1,37 @@
+// Package main is the entry point for the Database monitoring service.
 package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
-	dbserver "github.com/labring/sealos/service/database/server"
-	"github.com/labring/sealos/service/pkg/server"
+	"github.com/labring/sealos/service/database/cmd"
+	"github.com/labring/sealos/service/pkg/config"
 )
 
 func main() {
+	// Setup logging
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// Parse command-line flags
+	configFile := flag.String("config", "/config/config.yml", "path to configuration file")
 	flag.Parse()
 
-	cf := flag.Arg(0)
-	if cf == "" {
-		fmt.Println("The config file is not specified")
-		return
+	// Override with positional argument if provided
+	if flag.NArg() > 0 {
+		*configFile = flag.Arg(0)
 	}
 
-	config, err := server.InitConfig(cf)
+	// Load configuration
+	cfg, err := config.LoadConfig(*configFile)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	rs := dbserver.DatabaseServer{
-		ConfigFile: cf,
+	// Run server
+	if err := cmd.Run(cfg); err != nil {
+		log.Fatalf("Server failed: %v", err)
 	}
-
-	rs.Serve(config)
 }

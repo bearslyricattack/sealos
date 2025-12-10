@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -79,12 +80,29 @@ func (h *DatabaseHandler) HandleQuery(c *gin.Context) {
 	}
 	log.Printf("✅ 查询执行成功")
 
-	// 4. 返回成功响应
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "查询成功",
-		"data":    result,
-	})
+	var res api.QueryResult
+
+	if err := json.Unmarshal(result, &res); err != nil {
+		log.Printf("❌ 解析失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "数据解析失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+	totalPoints := 0
+	for _, series := range res.Data.Result {
+		if res.Data.ResultType == "vector" {
+			totalPoints++
+		} else {
+			totalPoints += len(series.Values)
+		}
+	}
+	log.Printf("✅ 查询成功: type=%s, series=%d, points=%d",
+		res.Data.ResultType, len(res.Data.Result), totalPoints)
+
+	c.JSON(http.StatusOK, res)
 	log.Printf("=== 请求处理完成 ===\n")
 }
 

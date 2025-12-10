@@ -2,65 +2,74 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/labring/sealos/service/database/internal/handler"
 	"github.com/labring/sealos/service/database/internal/router"
 	"github.com/labring/sealos/service/database/internal/service"
 	"github.com/labring/sealos/service/pkg/config"
-	pkgHandler "github.com/labring/sealos/service/pkg/handler"
 )
 
 // Run starts the database monitoring service
 func Run(cfg *config.ServerConfig) error {
-	// Create server
-	server, err := pkgHandler.NewServer(cfg)
-	if err != nil {
-		return err
-	}
-
 	// Create database service
 	dbService, err := service.NewDatabaseService(cfg)
 	if err != nil {
 		return err
 	}
+	log.Printf("Database monitoring service using metrics host: %s", dbService.GetMetricsHost())
 	defer dbService.Close()
 
-	log.Printf("Database monitoring service using metrics host: %s", dbService.GetMetricsHost())
+	// Create handler
+	dbHandler := handler.NewDatabaseHandler(dbService)
+
+	// Setup Gin engine
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 
 	// Setup routes
-	router.SetupRoutes(server, dbService)
+	router.Setup(r, dbHandler)
+
+	// Create HTTP server
+	server := &http.Server{
+		Addr:           cfg.ListenAddress,
+		Handler:        r,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 21,
+	}
 
 	// Start server in a goroutine
 	go func() {
-		if err := server.Start(); err != nil {
+		log.Printf("Server starting on %s", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()
-
-	// Wait for interrupt signal
+	// Wait for interrupt signal and graceful shutdown
 	return gracefulShutdown(server)
 }
 
 // gracefulShutdown handles graceful shutdown
-func gracefulShutdown(server *pkgHandler.Server) error {
+func gracefulShutdown(server *http.Server) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-
 	log.Println("Shutting down server...")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
 		return err
 	}
-
 	log.Println("Server exited")
 	return nil
 }

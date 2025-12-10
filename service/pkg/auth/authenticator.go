@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -63,8 +64,15 @@ func (a *Authenticator) Authenticate(namespace, kubeconfig string) error {
 		return nil
 	}
 
+	var kc string
+	if config, err := url.PathUnescape(kubeconfig); err == nil {
+		kc = config
+	} else {
+		return fmt.Errorf("failed to PathUnescape : %w", err)
+	}
+
 	// Parse kubeconfig
-	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
+	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidKubeconfig, err)
 	}

@@ -66,18 +66,23 @@ func (h *DatabaseHandler) HandleQuery(c *gin.Context) {
 // parseRequest extracts request parameters from context
 func (h *DatabaseHandler) parseRequest(c *gin.Context) (*api.DatabaseRequest, error) {
 	req := &api.DatabaseRequest{}
-
-	// Bind form parameters
-	req.Namespace = c.PostForm("namespace")
-	req.Type = c.PostForm("type")
-	req.Query = c.PostForm("query")
-	req.Cluster = c.PostForm("app")
-	req.Range.Start = c.PostForm("start")
-	req.Range.End = c.PostForm("end")
-	req.Range.Step = c.PostForm("step")
-	req.Range.Time = c.PostForm("time")
+	req.Namespace = getParam(c, "namespace")
+	req.Type = getParam(c, "type")
+	req.Query = getParam(c, "query")
+	req.Cluster = getParam(c, "app")
+	req.Range.Start = getParam(c, "start")
+	req.Range.End = getParam(c, "end")
+	req.Range.Step = getParam(c, "step")
+	req.Range.Time = getParam(c, "time")
 
 	return req, nil
+}
+
+func getParam(c *gin.Context, key string) string {
+	if value := c.Query(key); value != "" {
+		return value
+	}
+	return c.PostForm(key)
 }
 
 // validateRequest validates required fields

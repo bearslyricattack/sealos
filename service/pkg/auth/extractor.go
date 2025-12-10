@@ -12,10 +12,17 @@ type CredentialExtractor interface {
 // DefaultExtractor extracts credentials from form data and headers
 type DefaultExtractor struct{}
 
+func getParam(c *gin.Context, key string) string {
+	if value := c.Query(key); value != "" {
+		return value
+	}
+	return c.PostForm(key)
+}
+
 // Extract implements CredentialExtractor
 func (e *DefaultExtractor) Extract(c *gin.Context) (string, string, error) {
-	namespace := c.PostForm("namespace")
-	kubeconfig := c.PostForm("kubeconfig")
+	namespace := getParam(c, "namespace")
+	kubeconfig := getParam(c, "kubeconfig")
 	if namespace == "" {
 		return "", "", ErrNilNamespace
 	}

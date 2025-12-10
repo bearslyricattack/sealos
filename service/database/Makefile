@@ -12,6 +12,7 @@ PLATFORMS ?= linux_arm64 linux_amd64
 GOOS=linux
 CGO_ENABLED=0
 GOARCH=$(shell go env GOARCH)
+TARGETARCH ?= $(GOARCH)
 
 GO_BUILD_FLAGS=-trimpath -ldflags "-s -w"
 
@@ -47,7 +48,7 @@ build: clean ## Build service-hub binary.
 
 .PHONY: docker-build
 docker-build: build
-	mv bin/manager bin/service-database-${TARGETARCH}
+	mv bin/manager bin/service-vlogs-${TARGETARCH}
 	docker build -t $(IMG) .
 
 .PHONY: docker-push

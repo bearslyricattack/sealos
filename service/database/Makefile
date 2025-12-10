@@ -40,7 +40,7 @@ help: ## Display this help.
 
 .PHONY: clean
 clean:
-	rm -rf /bin/
+	rm -rf bin
 
 .PHONY: build
 build: clean ## Build service-hub binary.

@@ -32,9 +32,9 @@ func Setup(r *gin.Engine, dbHandler *handler.DatabaseHandler) {
 	}
 	middleware := auth.Middleware(middlewareConfig)
 	api := r.Group("")
-	api.Use(middleware) // 认证中间件
+	api.Use(middleware)
 	{
-		api.POST("/q", dbHandler.HandleQuery)
-		api.POST("/query", dbHandler.HandleQuery) // 兼容旧版
+		api.GET("/q", dbHandler.HandleQuery)
+		api.GET("/query", dbHandler.HandleQuery)
 	}
 }

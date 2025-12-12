@@ -5,10 +5,12 @@ use (
 	./account
 	./database
 	./devbox
+	./devboxmonitor
 	./exceptionmonitor
 	./hubble
 	./imagemonitor
 	./launchpad
+	./minio
 	./pay
 	./vlogs
 	./zombiedetector

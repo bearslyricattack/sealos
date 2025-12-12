@@ -43,6 +43,15 @@ type MinioRequest struct {
 	Range     TimeRange `json:"range" form:"range" mapstructure:","` // Time range for the query
 }
 
+// DevboxRequest represents a request to query Devbox metrics.
+type DevboxRequest struct {
+	Namespace  string    `json:"namespace" form:"namespace"`          // Kubernetes namespace
+	DevboxName string    `json:"devboxName" form:"devboxName"`        // Devbox name
+	Type       string    `json:"type" form:"type"`                    // Query type: cpu, memory, disk, network_in, network_out
+	PodName    string    `json:"podName" form:"podName"`              // Pod name (optional, for pod-specific queries)
+	Range      TimeRange `json:"range" form:"range" mapstructure:","` // Time range for the query
+}
+
 // Common errors
 var (
 	ErrNoMetricsHost = errors.New("unable to get the metrics host from environment")

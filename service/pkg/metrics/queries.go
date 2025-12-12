@@ -98,6 +98,14 @@ var QueryTemplates = map[string]map[string]string{
 		"average_memory": "round(avg(container_memory_working_set_bytes{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\",namespace=~\"#\",container!=\"\", image!=\"\",pod=~\"@.*\"}) by (namespace) / avg(cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace=~\"#\", pod=~\"@.*\"}) by (namespace)* 100, 0.01)",
 		"storage":        "round((max by (persistentvolumeclaim,namespace) (kubelet_volume_stats_used_bytes {namespace=~\"#\", persistentvolumeclaim=~\"$PVC\"})) / (max by (persistentvolumeclaim,namespace) (kubelet_volume_stats_capacity_bytes {namespace=~\"#\", persistentvolumeclaim=~\"$PVC\"})) * 100, 0.01)",
 	},
+
+	"devbox": {
+		"cpu":         "round(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace=~\"#\",pod=~\"@.*\"}) by (pod) / sum(cluster:namespace:pod_cpu:active:kube_pod_container_resource_limits{namespace=~\"#\",pod=~\"@.*\"}) by (pod) * 100,0.01)",
+		"memory":      "round(sum(container_memory_working_set_bytes{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\",namespace=~\"#\",container!=\"\", image!=\"\",pod=~\"@.*\"}) by(pod) / sum(cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace=~\"#\", pod=~\"@.*\"}) by (pod)* 100, 0.01)",
+		"disk":        "round((max by (persistentvolumeclaim,namespace) (kubelet_volume_stats_used_bytes {namespace=~\"#\", pod=~\"@.*\"})) / (max by (persistentvolumeclaim,namespace) (kubelet_volume_stats_capacity_bytes {namespace=~\"#\", pod=~\"@.*\"})) * 100, 0.01)",
+		"network_in":  "sum(rate(container_network_receive_bytes_total{namespace=~\"#\",pod=~\"@.*\"}[5m])) by (pod)",
+		"network_out": "sum(rate(container_network_transmit_bytes_total{namespace=~\"#\",pod=~\"@.*\"}[5m])) by (pod)",
+	},
 }
 
 func init() {

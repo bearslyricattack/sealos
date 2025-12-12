@@ -1,4 +1,4 @@
-// Package main is the entry point for the Launchpad monitoring service.
+// Package main is the entry point for the Devbox monitoring service.
 package main
 
 import (
@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/labring/sealos/service/launchpad/cmd"
+	"github.com/labring/sealos/service/devboxmonitor/cmd"
 	"github.com/labring/sealos/service/pkg/config"
 )
 

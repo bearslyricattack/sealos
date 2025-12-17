@@ -134,15 +134,11 @@ func (h *DatabaseHandler) parseRequest(c *gin.Context) (*api.DatabaseRequest, er
 
 func getParam(c *gin.Context, key string) string {
 	var value string
-
-	// 尝试从 Query 获取
 	if v := c.Query(key); v != "" {
 		value = v
 		log.Printf("  getParam('%s') from Query = '%s'", key, value)
 		return value
 	}
-
-	// 尝试从 PostForm 获取
 	if v := c.PostForm(key); v != "" {
 		value = v
 		log.Printf("  getParam('%s') from PostForm = '%s'", key, value)

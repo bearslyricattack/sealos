@@ -16,12 +16,10 @@ func NewBuilder() *Builder {
 	return &Builder{}
 }
 
-// Build constructs a PromQL query from request
 func (b *Builder) Build(req *api.LaunchpadRequest) (string, error) {
 	// Try predefined query template
 	query, ok := metrics.BuildQuery("launchpad", req.Type)
-	if !ok {
-		// Use custom query with variable replacement
+	if ok {
 		query = b.replaceVariables(query, req.Type, req.Namespace, req.LaunchPadName, req.PvcName, req.Service, req.Port)
 		fmt.Printf(req.Service)
 		fmt.Printf(req.Port)

@@ -39,9 +39,7 @@ func NewLaunchpadService(cfg *config.ServerConfig) (*LaunchpadService, error) {
 	}, nil
 }
 
-// ExecuteQuery executes a launchpad metrics query
 func (s *LaunchpadService) ExecuteQuery(ctx context.Context, req *api.LaunchpadRequest) ([]byte, error) {
-	// Build query
 	promQL, err := s.queryBuilder.Build(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)

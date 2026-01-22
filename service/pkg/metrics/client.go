@@ -185,7 +185,7 @@ func (c *Client) QueryInstant(ctx context.Context, query string, timestamp strin
 	timeRange := &api.TimeRange{
 		Time: timestamp,
 	}
-	return c.Query(ctx, "/api/v1/query", query, timeRange)
+	return c.Query(ctx, "/select/0/prometheus/", query, timeRange)
 }
 
 // QueryRange executes a range query.
@@ -195,7 +195,7 @@ func (c *Client) QueryRange(ctx context.Context, query string, start, end, step 
 		End:   end,
 		Step:  step,
 	}
-	return c.Query(ctx, "/api/v1/query_range", query, timeRange)
+	return c.Query(ctx, "/select/0/prometheus/", query, timeRange)
 }
 
 // Close closes idle connections in the client's connection pool.

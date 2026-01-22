@@ -23,6 +23,8 @@ func (b *Builder) Build(req *api.LaunchpadRequest) (string, error) {
 	if !ok {
 		// Use custom query with variable replacement
 		query = b.replaceVariables(query, req.Type, req.Namespace, req.LaunchPadName, req.PvcName, req.Service, req.Port)
+		fmt.Printf(req.Service)
+		fmt.Printf(req.Port)
 	} else {
 		// For storage queries, replace $PVC placeholder with actual PVC name
 		if req.Type == "storage" && req.PvcName != "" {
@@ -37,6 +39,7 @@ func (b *Builder) Build(req *api.LaunchpadRequest) (string, error) {
 func (b *Builder) replaceVariables(query, queryType, namespace, launchPadName, pvcName, service, port string) string {
 	if queryType == "network_service_request_count" || queryType == "network_service_request_percent" {
 		clusterName := BuildClusterName(service, namespace, port)
+		fmt.Println(clusterName)
 		replacer := strings.NewReplacer(
 			"@", clusterName,
 		)

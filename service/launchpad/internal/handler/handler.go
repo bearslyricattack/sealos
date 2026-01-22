@@ -63,9 +63,6 @@ func (h *LaunchpadHandler) HandleQuery(c *gin.Context) {
 		})
 		return
 	}
-	log.Printf("✅ 请求验证成功")
-
-	log.Printf("🔍 执行查询: namespace=%s, launchPadName=%s, type=%s, pvcName=%s", req.Namespace, req.LaunchPadName, req.Type, req.PvcName)
 	result, err := h.service.ExecuteQuery(c.Request.Context(), req)
 	if err != nil {
 		log.Printf("❌ 查询执行失败: %v", err)
@@ -122,6 +119,8 @@ func (h *LaunchpadHandler) parseRequest(c *gin.Context) (*api.LaunchpadRequest, 
 	log.Printf("  LaunchPadName: '%s' (empty: %v)", req.LaunchPadName, req.LaunchPadName == "")
 	log.Printf("  Type: '%s' (empty: %v)", req.Type, req.Type == "")
 	log.Printf("  PvcName: '%s' (empty: %v)", req.PvcName, req.PvcName == "")
+	log.Printf("  Service'%s'", req.Service)
+	log.Printf("  Port'%s'", req.Port)
 	log.Printf("  Range.Start: '%s'", req.Range.Start)
 	log.Printf("  Range.End: '%s'", req.Range.End)
 	log.Printf("  Range.Step: '%s'", req.Range.Step)

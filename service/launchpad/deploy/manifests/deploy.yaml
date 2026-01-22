@@ -57,7 +57,7 @@ spec:
             - /manager
           env:
             - name: METRICS_HOST
-              value: http://vmselect-vm-stack-victoria-metrics-k8s-stack.vm.svc:8421
+              value: http://vmselect-vm-stack-victoria-metrics-k8s-stack.vm.svc:8481
             - name: WHITELIST_KUBERNETES_HOSTS
               value: https://gzg.sealos.run:6443
           image: bearslyricattack/sealos-launchpad-service:v2-1

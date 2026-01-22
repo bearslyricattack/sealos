@@ -36,7 +36,7 @@ func (b *Builder) Build(req *api.LaunchpadRequest) (string, error) {
 // replaceVariables replaces template variables in query
 func (b *Builder) replaceVariables(query, queryType, namespace, launchPadName, pvcName, service, port string) string {
 	if queryType == "network_service_request_count" || queryType == "network_service_request_percent" {
-		clusterName := BuildClusterName(service, namespace, port)
+		clusterName := BuildClusterName(service, port)
 		fmt.Println(clusterName)
 		replacer := strings.NewReplacer(
 			"@", clusterName,
@@ -51,6 +51,6 @@ func (b *Builder) replaceVariables(query, queryType, namespace, launchPadName, p
 	return replacer.Replace(query)
 }
 
-func BuildClusterName(serviceName, namespace string, port string) string {
-	return fmt.Sprintf("outbound|%s||%s.%s.svc.cluster.local.internal", port, serviceName, namespace)
+func BuildClusterName(serviceName, port string) string {
+	return fmt.Sprintf("outbound|%s||%s", port, serviceName)
 }

@@ -35,7 +35,6 @@ func Setup(r *gin.Engine, launchpadHandler *handler.LaunchpadHandler) {
 	api := r.Group("")
 	api.Use(middleware)
 	{
-		api.GET("/q", launchpadHandler.HandleQuery)
 		api.GET("/query", launchpadHandler.HandleQuery)
 	}
 }

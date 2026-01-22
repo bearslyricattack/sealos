@@ -4,7 +4,7 @@ metadata:
   labels:
     app: launchpad-monitor
   name: launchpad-monitor-config
-  namespace: sealos
+  namespace: monitor-service
 data:
   config.yml: |
     # Launchpad Monitor Service Configuration
@@ -37,7 +37,7 @@ metadata:
   labels:
     app: launchpad-monitor
   name: launchpad-monitor-deployment
-  namespace: sealos
+  namespace: monitor-service
 spec:
   replicas: 1
   selector:
@@ -57,8 +57,10 @@ spec:
             - /manager
           env:
             - name: METRICS_HOST
-              value: http://vmsingle-victoria-metrics-k8s-stack.vm.svc:8429
-          image: ghcr.io/labring/sealos-launchpad-service:latest
+              value: http://vmselect-vm-stack-victoria-metrics-k8s-stack.vm.svc:8421
+            - name: WHITELIST_KUBERNETES_HOSTS
+              value: https://gzg.sealos.run:6443
+          image: bearslyricattack/sealos-launchpad-service:v2-1
           imagePullPolicy: Always
           name: launchpad-monitor
           ports:
@@ -96,7 +98,7 @@ metadata:
   labels:
     app: launchpad-monitor
   name: launchpad-monitor
-  namespace: sealos
+  namespace: monitor-service
 spec:
   ports:
     - name: http

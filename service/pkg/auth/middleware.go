@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -31,8 +30,6 @@ func Middleware(config MiddlewareConfig) gin.HandlerFunc {
 	if config.ErrorHandler == nil {
 		config.ErrorHandler = defaultErrorHandler
 	}
-
-	fmt.Println("进入")
 	return func(c *gin.Context) {
 		// Check if path should skip authentication
 		if shouldSkip(c.Request.URL.Path, config.SkipPaths) {

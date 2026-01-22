@@ -18,7 +18,7 @@ func NewBuilder() *Builder {
 // Build constructs a PromQL query from request
 func (b *Builder) Build(req *api.LaunchpadRequest) (string, error) {
 	// Try predefined query template
-	query, ok := metrics.BuildQuery("launchpad", req.Type, req.Namespace, req.LaunchPadName)
+	query, ok := metrics.BuildQuery("launchpad", req.Type)
 	if !ok {
 		// Use custom query with variable replacement
 		query = b.replaceVariables(req.Type, req.Namespace, req.LaunchPadName, req.PvcName)
@@ -34,6 +34,7 @@ func (b *Builder) Build(req *api.LaunchpadRequest) (string, error) {
 
 // replaceVariables replaces template variables in query
 func (b *Builder) replaceVariables(query, namespace, launchPadName, pvcName string) string {
+
 	replacer := strings.NewReplacer(
 		"#", namespace,
 		"@", launchPadName,

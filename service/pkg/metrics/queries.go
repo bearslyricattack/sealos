@@ -92,11 +92,8 @@ var QueryTemplates = map[string]map[string]string{
 	},
 
 	"launchpad": {
-		"cpu":            "round(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace=~\"#\",pod=~\"@.*\"}) by (pod) / sum(cluster:namespace:pod_cpu:active:kube_pod_container_resource_limits{namespace=~\"#\",pod=~\"@.*\"}) by (pod) * 100,0.01)",
-		"memory":         "round(sum(container_memory_working_set_bytes{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\",namespace=~\"#\",container!=\"\", image!=\"\",pod=~\"@.*\"}) by(pod) / sum(cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace=~\"#\", pod=~\"@.*\"}) by (pod)* 100, 0.01)",
-		"average_cpu":    "round(avg(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace=~\"#\",pod=~\"@.*\"}) by (namespace) / avg(cluster:namespace:pod_cpu:active:kube_pod_container_resource_limits{namespace=~\"#\",pod=~\"@.*\"}) by (namespace) * 100,0.01)",
-		"average_memory": "round(avg(container_memory_working_set_bytes{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\",namespace=~\"#\",container!=\"\", image!=\"\",pod=~\"@.*\"}) by (namespace) / avg(cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace=~\"#\", pod=~\"@.*\"}) by (namespace)* 100, 0.01)",
-		"storage":        "round((max by (persistentvolumeclaim,namespace) (kubelet_volume_stats_used_bytes {namespace=~\"#\", persistentvolumeclaim=~\"$PVC\"})) / (max by (persistentvolumeclaim,namespace) (kubelet_volume_stats_capacity_bytes {namespace=~\"#\", persistentvolumeclaim=~\"$PVC\"})) * 100, 0.01)",
+		"network_service_request_count":   "envoy_cluster_upstream_rq{cluster_name=\"@\"}",
+		"network_service_request_percent": "envoy:service:upstream_rq_percentage:by_response_code{cluster_name=\"@\"}",
 	},
 
 	"devbox": {
@@ -115,39 +112,14 @@ func init() {
 
 // BuildQuery constructs a PromQL query from a template by replacing placeholders.
 // # is replaced with namespace, @ is replaced with app/cluster name.
-func BuildQuery(dbType, queryType, namespace, app string) (string, bool) {
+func BuildQuery(dbType, queryType string) (string, bool) {
 	templates, ok := QueryTemplates[dbType]
 	if !ok {
 		return "", false
 	}
-
 	template, ok := templates[queryType]
 	if !ok {
 		return "", false
 	}
-
-	// Replace template variables
-	query := template
-	query = replaceAll(query, "#", namespace)
-	query = replaceAll(query, "@", app)
-
-	return query, true
-}
-
-// replaceAll is a simple string replacement that handles empty strings gracefully.
-func replaceAll(s, old, new string) string {
-	if old == "" {
-		return s
-	}
-	result := ""
-	lastIndex := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == old[0] && len(s)-i >= len(old) && s[i:i+len(old)] == old {
-			result += s[lastIndex:i] + new
-			i += len(old) - 1
-			lastIndex = i + 1
-		}
-	}
-	result += s[lastIndex:]
-	return result
+	return template, true
 }

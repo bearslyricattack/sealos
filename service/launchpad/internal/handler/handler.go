@@ -65,9 +65,7 @@ func (h *LaunchpadHandler) HandleQuery(c *gin.Context) {
 	}
 	log.Printf("✅ 请求验证成功")
 
-	// 3. 通过服务层执行查询
-	log.Printf("🔍 执行查询: namespace=%s, launchPadName=%s, type=%s, pvcName=%s",
-		req.Namespace, req.LaunchPadName, req.Type, req.PvcName)
+	log.Printf("🔍 执行查询: namespace=%s, launchPadName=%s, type=%s, pvcName=%s", req.Namespace, req.LaunchPadName, req.Type, req.PvcName)
 	result, err := h.service.ExecuteQuery(c.Request.Context(), req)
 	if err != nil {
 		log.Printf("❌ 查询执行失败: %v", err)
@@ -99,14 +97,11 @@ func (h *LaunchpadHandler) HandleQuery(c *gin.Context) {
 			totalPoints += len(series.Values)
 		}
 	}
-	log.Printf("✅ 查询成功: type=%s, series=%d, points=%d",
-		res.Data.ResultType, len(res.Data.Result), totalPoints)
-
+	log.Printf("✅ 查询成功: type=%s, series=%d, points=%d", res.Data.ResultType, len(res.Data.Result), totalPoints)
 	c.JSON(http.StatusOK, res)
 	log.Printf("=== 请求处理完成 ===\n")
 }
 
-// parseRequest extracts request parameters from context
 func (h *LaunchpadHandler) parseRequest(c *gin.Context) (*api.LaunchpadRequest, error) {
 	log.Printf("--- 解析请求参数 ---")
 
@@ -114,6 +109,8 @@ func (h *LaunchpadHandler) parseRequest(c *gin.Context) (*api.LaunchpadRequest, 
 	req.Namespace = getParam(c, "namespace")
 	req.LaunchPadName = getParam(c, "launchPadName")
 	req.Type = getParam(c, "type")
+	req.Service = getParam(c, "service")
+	req.Port = getParam(c, "port")
 	req.PvcName = getParam(c, "pvcName")
 	req.Range.Start = getParam(c, "start")
 	req.Range.End = getParam(c, "end")
@@ -163,24 +160,16 @@ func (h *LaunchpadHandler) validateRequest(req *api.LaunchpadRequest) error {
 	}
 	log.Printf("✓ namespace: %s", req.Namespace)
 
-	if req.LaunchPadName == "" {
-		log.Printf("❌ 验证失败: launchPadName 为空")
-		return fmt.Errorf("launchPadName is required")
-	}
-	log.Printf("✓ launchPadName: %s", req.LaunchPadName)
-
 	if req.Type == "" {
 		log.Printf("❌ 验证失败: type 为空")
 		return fmt.Errorf("type is required")
 	}
 	log.Printf("✓ type: %s", req.Type)
-
 	// PvcName is only required for storage queries
 	if req.Type == "storage" && req.PvcName == "" {
 		log.Printf("❌ 验证失败: storage查询需要pvcName")
 		return fmt.Errorf("pvcName is required for storage queries")
 	}
-
 	log.Printf("✅ 所有必需参数验证通过")
 	return nil
 }

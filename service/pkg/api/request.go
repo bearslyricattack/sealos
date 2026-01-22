@@ -21,9 +21,11 @@ func (tr *TimeRange) IsInstantQuery() bool {
 type LaunchpadRequest struct {
 	Namespace     string    `json:"namespace" form:"namespace"`          // Kubernetes namespace
 	LaunchPadName string    `json:"launchPadName" form:"launchPadName"`  // Launchpad application name
-	Type          string    `json:"type" form:"type"`                    // Query type: cpu, memory, storage, average_cpu, average_memory
+	Type          string    `json:"type" form:"type"`                    // Query type: cpu, memory, storage, average_cpu, average_memory,
 	PvcName       string    `json:"pvcName" form:"pvcName"`              // PVC name (required for storage queries)
 	Range         TimeRange `json:"range" form:"range" mapstructure:","` // Time range for the query
+	Service       string    `json:"service" form:"service" mapstructure:"service"`
+	Port          string    `json:"port" form:"port" mapstructure:"port"`
 }
 
 // DatabaseRequest represents a request to query database metrics.

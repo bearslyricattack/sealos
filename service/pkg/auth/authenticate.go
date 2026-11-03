@@ -13,7 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 var (
@@ -31,11 +33,15 @@ func AddWhiteListKubernetesHosts(host string) {
 }
 
 func GetKcHost(kc string) (string, error) {
-	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
+	config, err := clientcmd.Load([]byte(kc))
 	if err != nil {
 		return "", fmt.Errorf("kubeconfig failed  %w", err)
 	}
-	return config.Host, nil
+	cluster, err := currentCluster(config)
+	if err != nil {
+		return "", err
+	}
+	return cluster.Server, nil
 }
 
 func GetKcUser(kc string) (string, error) {
@@ -43,10 +49,116 @@ func GetKcUser(kc string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("kubeconfig failed  %w", err)
 	}
-	for user := range config.AuthInfos {
-		return user, nil
+	ctx, err := currentContext(config)
+	if err != nil {
+		return "", err
 	}
-	return "", errors.New("no user found")
+	if _, ok := config.AuthInfos[ctx.AuthInfo]; !ok {
+		return "", errors.New("no user found for current context")
+	}
+	return ctx.AuthInfo, nil
+}
+
+func currentContext(config *clientcmdapi.Config) (*clientcmdapi.Context, error) {
+	if config.CurrentContext == "" {
+		return nil, errors.New("kubeconfig has no current context")
+	}
+	ctx, ok := config.Contexts[config.CurrentContext]
+	if !ok || ctx == nil {
+		return nil, errors.New("kubeconfig current context not found")
+	}
+	return ctx, nil
+}
+
+func currentCluster(config *clientcmdapi.Config) (*clientcmdapi.Cluster, error) {
+	ctx, err := currentContext(config)
+	if err != nil {
+		return nil, err
+	}
+	cluster, ok := config.Clusters[ctx.Cluster]
+	if !ok || cluster == nil {
+		return nil, errors.New("kubeconfig cluster for current context not found")
+	}
+	return cluster, nil
+}
+
+// restConfigFromKubeConfig deliberately supports only inline credentials. In
+// particular, never pass caller-controlled ExecConfig to client-go: exec
+// credential plugins run when the first request is made.
+func restConfigFromKubeConfig(kc string) (*rest.Config, error) {
+	parsed, err := clientcmd.Load([]byte(kc))
+	if err != nil {
+		return nil, fmt.Errorf("kubeconfig failed: %w", err)
+	}
+
+	// Reject dangerous fields even in inactive entries so a context switch or
+	// future refactor cannot make them executable/readable by client-go.
+	for _, user := range parsed.AuthInfos {
+		if user == nil {
+			continue
+		}
+		if user.Exec != nil {
+			return nil, errors.New("kubeconfig exec credential plugins are not allowed")
+		}
+		if user.AuthProvider != nil {
+			return nil, errors.New("kubeconfig auth-provider plugins are not allowed")
+		}
+		if user.TokenFile != "" || user.ClientCertificate != "" || user.ClientKey != "" {
+			return nil, errors.New("kubeconfig file-based credentials are not allowed")
+		}
+		if user.Username != "" || user.Password != "" || user.Impersonate != "" || user.ImpersonateUID != "" || len(user.ImpersonateGroups) != 0 || len(user.ImpersonateUserExtra) != 0 {
+			return nil, errors.New("unsupported kubeconfig authentication fields")
+		}
+	}
+
+	ctx, err := currentContext(parsed)
+	if err != nil {
+		return nil, err
+	}
+	user, ok := parsed.AuthInfos[ctx.AuthInfo]
+	if !ok || user == nil {
+		return nil, errors.New("kubeconfig user for current context not found")
+	}
+	cluster, ok := parsed.Clusters[ctx.Cluster]
+	if !ok || cluster == nil {
+		return nil, errors.New("kubeconfig cluster for current context not found")
+	}
+	if cluster.Server == "" {
+		return nil, errors.New("kubeconfig server is empty")
+	}
+	if cluster.CertificateAuthority != "" {
+		return nil, errors.New("kubeconfig CA file paths are not allowed")
+	}
+	if cluster.ProxyURL != "" {
+		return nil, errors.New("kubeconfig proxy URLs are not allowed")
+	}
+	if cluster.InsecureSkipTLSVerify {
+		return nil, errors.New("kubeconfig insecure TLS is not allowed")
+	}
+	if (len(user.ClientCertificateData) == 0) != (len(user.ClientKeyData) == 0) {
+		return nil, errors.New("kubeconfig client certificate and key must be provided together")
+	}
+	if user.Token != "" && len(user.ClientCertificateData) != 0 {
+		return nil, errors.New("kubeconfig must use either a token or a client certificate")
+	}
+
+	host := cluster.Server
+	if !IsWhitelistKubernetesHost(host) {
+		host = GetKubernetesHostFromEnv()
+		if host == "" {
+			return nil, ErrNoSealosHost
+		}
+	}
+
+	return &rest.Config{
+		Host:        host,
+		BearerToken: user.Token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   cluster.CertificateAuthorityData,
+			CertData: user.ClientCertificateData,
+			KeyData:  user.ClientKeyData,
+		},
+	}, nil
 }
 
 func CheckK8sHost(host string) error {
@@ -66,17 +178,9 @@ func Authenticate(ns, kc string) error {
 	if ns == "" {
 		return ErrNilNs
 	}
-	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
+	config, err := restConfigFromKubeConfig(kc)
 	if err != nil {
-		log.Printf("kubeconfig failed (%s)\n", kc)
-		return fmt.Errorf("kubeconfig failed  %w", err)
-	}
-	if !IsWhitelistKubernetesHost(config.Host) {
-		if k8shost := GetKubernetesHostFromEnv(); k8shost != "" {
-			config.Host = k8shost
-		} else {
-			return ErrNoSealosHost
-		}
+		return fmt.Errorf("kubeconfig failed: %w", err)
 	}
 
 	client, err := kubernetes.NewForConfig(config)
@@ -112,16 +216,9 @@ func AuthenticatePVC(ns, kc string, pvcUIDs []string) error {
 	if len(pvcUIDs) == 0 {
 		return ErrNilPVCUID
 	}
-	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
+	config, err := restConfigFromKubeConfig(kc)
 	if err != nil {
 		return fmt.Errorf("kubeconfig failed: %w", err)
-	}
-	if !IsWhitelistKubernetesHost(config.Host) {
-		if k8shost := GetKubernetesHostFromEnv(); k8shost != "" {
-			config.Host = k8shost
-		} else {
-			return ErrNoSealosHost
-		}
 	}
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
